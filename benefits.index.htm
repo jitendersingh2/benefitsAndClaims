@@ -1,0 +1,2055 @@
+
+	#if($wo.defaultPolicy.medicareSupplement)
+		#set( $header = "resources" )
+		#set( $onload = "resources" )
+		#set( $footer = "secure" )
+	#else
+		#set( $header = "benefits" )
+		#set( $onload = "benefits" )
+		#set( $footer = "secure" )
+	#end
+	#set($displayErrorMessage = false)
+	#set($stateMessage = false)
+	#set($benefitsPage = true)
+
+	#parse( "members/secure/header.htm" )
+
+	#if(!$wo.feature.benefits)
+		#parse ("members/secure/no-access.htm")
+	#end
+
+	#if($loggedInMember.defaultPolicy.groupNumber == "012483" || $loggedInMember.defaultPolicy.groupNumber == "012484")
+		#set($rcponly = true)
+	#end
+
+	#if ($wo.defaultPolicy.isMedical)
+		#set( $navigation = 2 )
+	#else
+		#set( $navigation = 7 )
+	#end
+
+	#if($wo.defaultPolicy.medicareSupplement)
+		#parse("members/secure/benefits/resources.htm")
+
+	#else
+
+	#if($contingency)
+		<meta http-equiv="refresh" content="0;url=/sapps/members/viewBenefits.do"/>
+	#elseif($rcponly)
+		#parse("members/secure/benefits/rcponly.htm")
+	#else
+
+		#if($loggedInMember.policies.size() > 1)
+			<script type="text/javascript">
+				$(function(){
+					#if($wo.demo.demoMode)
+						## If DemoMode, we need to load the correct data files for the selected year
+						$(document).delegate('#benefitsPolicy', 'change', function() {
+							var policyYearStr = $('#benefitsPolicy').val().split(/[/ ]+/).pop();
+							/*## We are only checking the current year (currently 2014) and 2013, since those are the only years with data right now
+							*/
+							if(policyYearStr === '2014') {
+								bcbsnc.servicesConfig.benefitsDataUrl = bcbsnc.demoServiceURL('benefits');
+							}
+							else {
+								bcbsnc.servicesConfig.benefitsDataUrl = bcbsnc.demoServiceURL('benefits','2013');
+							}
+							getBenefits('$loggedInMember.defaultMember.memberKey','$loggedInMember.defaultPolicy.policyKey','$loggedInMember.defaultPolicy.expirationDate','benefits',benefitsStatus);
+			  				bcbsnc.createServiceRequest('benefits');
+						});
+					#end
+				});
+			</script>
+		#end
+			<!-- Modal Open Colored Box -->
+			<div id="modalOpenBtn"></div>
+			<!-- The Modal -->
+			<div id="accessOneModal" class="access-one-modal">
+				<!-- Modal content -->
+				<div class="access-one-modal-content">
+					<span id="accessOneModalCloseBtn" class="access-one-modal-close">&times;</span>
+					<img
+						src="/assets/members/public/images/AccessOneLogo.png"
+						class="access-one-logo"
+					>
+					<p>AccessOne has partnered with selected hospitals to provide patient friendly financing.
+					   They offer no-interest and flexible low-interest payment plans that are tailored to
+					   your financial situation. Their customized payment options are made to help, not hurt:
+					</p>
+					<ul>
+						<li>No credit reporting</li>
+						<li>Everyone is accepted, 100% voluntary enrollment</li>
+						<li>No hidden fees</li>
+						<li>Easy payment methods: online, phone, check , auto pay</li>
+						<li>Combined Statements that include other medical bills and family members</li>
+					</ul> <br>
+					<a style="text-decoration: none;" target="_blank" href="https://www.accessonemedcard.com/"><button class="learn-more-btn">Learn More</button></a>
+				</div>
+			</div>
+
+			<div id="main-content" tabindex="-1" class="content-header">
+				<h1>Benefits</h1>
+			</div>
+
+			<div class="pageContent">
+			<!-- Your Benefits Usage -->
+
+				<!-- System Error Message & info message Section
+					instructions:	system outage messages should be placed in members/public/outage-message-body.htm
+							and they will be automatically included on the page-->
+				#parse("members/public/outage-message-body.htm")
+				<!-- End System Error Message Section -->
+
+				<div id="benefitsLoader">
+					<p>Loading Your Benefits Information...</p>
+					<img src="/assets/members/public/images/loading.gif" alt="Loading" />
+				</div>
+				<div id="benefitsAltContent" class="hide">
+
+				</div>
+<!-- FacetsTeired plan graph design -->				
+				## #if($wo.thisMember.isFacetsTieredPlanMem)
+					<div id="facetsTieredPlanWrapper">
+					<div class="tabContainer hide" style="border: 5px solid #DEDEDE;">
+					<div id="benefitsPolicyContainer" class="right">
+						#parse( "members/secure/includes/benefits-policySelect.htm" )
+					</div>
+
+					<h3>Your Benefits Usage</h3>
+					<div style="background-color:white !important;top: 50px; position: relative;">
+					<!-- col3 for FacetsTieredPlan (Blue Select Plus Members) -->   
+							<div class="col3" style="width: 710px; margin: 5px; clear: both; background-color: white; padding: 15px;" ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">
+							<h3 style="margin-bottom: 20px;">Coverage Summary</h3>
+							<div class="coverageSummaryHeader bgLightblueD pad12 largeTextSize">
+								<!-- <div>
+									Subscriber ID: <span class="selectedPolicy">{{bcbsnc.thisMember.selectedPolicy.externalID}}</span></br>
+									<span class="bold">{{bcbsnc.thisMember.selectedPolicy.planName}}</span>
+								</div>-->
+								<div style="display:inline-block;">
+									<!-- <span class="selectedPolicy right mediumTextSize">{{bcbsnc.thisMember.selectedPolicy.externalID}}</span> -->
+									<span class="bold">{{bcbsnc.thisMember.selectedPolicy.lobName}}</span>
+								</div>
+								#if($wo.feature.manageHSA)
+									#if($wo.feature.fundVendor == 'HealthEquity')
+										<div style="display:inline-block;float:right;" ng-init="loadHEQHSABalance()">
+											<a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks && !bcbsnc.thisMember.selectedPolicy.heqHSABalances.hasError">Manage Your HSA</a>
+										</div>
+									#else
+										<a style="float:right;" href="https://www.mybenefitwallet.com/" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks">Manage Your HSA</a>
+									#end
+								#end
+								#if($wo.feature.manageHRA)
+									#if ($date.difference($heqEffectiveDate, $dateFormat.format($loggedInMember.defaultPolicy.effectiveDate)).days >= 0)
+										#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).days > -90)
+											<li style="display:inline-block;float:right;" class="heq-sso-link"><a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank">Manage Your HRA</a></li>
+										#end
+									#else
+										#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).months > -6)
+											<li style="display:inline-block;float:right;"><a href="/members/secure/account/bcbsnc_redirect_consent.htm?SSO=HRA" target="_blank">Manage Your HRA</a></li>
+										#end
+									#end
+								#end
+							</div>
+							<div class="benefitsSummary" class="hmargin10 pad6" style="display:inline-block;width:68%;">
+								<table>
+									<tbody>
+									<tr>
+										<td class="firstTd"><p class="benefitsCopay"></p></td>
+										<td><p class="benefitsCoinsurance"></p></td>
+									</tr>
+									<tr>
+										<td class="firstTd"><p class="benefitsDeductible"></p></td>
+									    <td id="benefitsRxDeductible"><p class="benefitsRxDeductible"></p></td>
+										<td><p class="benefitsDrug"></p></td>
+									</tr>	
+									</tbody>
+								</table>
+							</div>
+							<!-- benefit booklet links -->
+							## QB10729
+							<p class='benefitBookletLinks' style="background-color:#f8f8f8;margin: 0px;padding: 0px 13px 65px 10px;vertical-align: top;clear: right;display: inline-block; width: 200px;">
+								<span ng-show="bcbsnc.thisMember.selectedPolicy.copayAfterDedPlan" style="font-size:11px;">*Copayments apply after your deductible has been met.</span>
+								<br><br>
+								#if ($wo.feature.benefitBooklet || $wo.feature.costEstimator)
+								For more information about your plan:<br>
+								#end
+								#if($wo.feature.benefitBooklet)
+									## parse("members/secure/benefits/include_policy_changes.htm")
+									#parse("members/secure/benefits/include_benefits_booklets.htm")
+									## #parse("members/secure/benefits/include_oarc.htm")
+									#set($benefitBookletLinkText = "View Your Benefit Booklet")
+									#parse("members/secure/benefits/include_benefits_booklet.htm")<br/>
+									#parse("members/secure/benefits/include_benefits_summary.htm")
+								#else
+									&nbsp;
+								#end
+
+								#if($wo.feature.wellness)
+										&nbsp;<span><a href="/members/secure/wellness/preventive_care_guidelines.htm">Learn More About Preventive Care</a></span><br>
+								#end
+
+								#if($wo.feature.costEstimator)
+								<span><a href="/members/secure/benefits/cost_estimator.htm">Treatment Cost Estimator</a></span>
+								#end
+							</p>
+							#if($wo.defaultPolicy.isGroup && $wo.defaultPolicy.ASO && !$wo.thisMember.bcbsncMember)
+							<p class="sbcLink hide sbcLinkMessage">
+								If you receive an error, we apologize. Please contact your Plan Administrator (your employer) or customer service for a copy of your SBC.
+							</p>
+							#end
+					</div>  <!-- end of col3  for FacetsTieredPlan (Blue Select Plus Members)-->
+					<ul class="memberTabs" style="background-color: white; margin: 5px 10px;">
+						<li id="benefitsFacetsInNetworkTab" class="activeTab" tabindex="0" ng-show="!bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">
+							<!--  <span ng-show="bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem">Preferred </span> In-Network <span ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan">Tier 1</span> -->
+							<span ng-show="!bcbsnc.thisMember.selectedPolicy.isTieredPlan && !bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem && !bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">In-Network</span>
+							<span ng-show="bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem">Preferred In-Network</span>
+							<span ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan">In-Network Tier 1</span>
+							<span ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">Preferred Care</span>
+						</li>
+						<li id="benefitsFacetsTier2Tab" class="inactiveTab" tabindex="0" ng-show="(bcbsnc.thisMember.selectedPolicy.isTieredPlan || bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem || bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan)">
+							<span ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan">In-Network Tier 2</span>
+							<span ng-show="bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem">Other In-Network</span>
+							<span ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">In-Network</span>
+						</li>
+						<!-- <li id="benefitsTier2Tab" class="activeTab" tabindex="0" ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">
+							<span ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">In-Network</span>
+						</li> -->
+						<li id="benefitsFacetsOutOfNetworkTab" class="inactiveTab benefits-policyNoOON benefitsPolicySwitch hide" tabindex="0">
+							Out-of-Network
+						</li>
+<!-- 						<li id="benefitsPrescriptionsTab" class="inactiveTab hide">
+							Prescriptions
+						</li> -->
+					</ul>
+
+		<!-- In-Network tab -->
+					<div id="benefitsFacetsInNetworkTabContent" class="tabContent">
+						<div id="benefitsFacetsInNetworkTabContentDetail">
+							<div class="containleftcols" style="float:left;">
+								<h3>Expense Summary</h3>
+								<div class="col1">
+									<div id="benefitsIN">
+										<!-- This block of text was removed during QB#11178 -->
+										<p class="benefits-policyHSAHRA benefitsPolicySwitch tieredPlanOverrideIN hide">
+											Expenses Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelAHSA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyIndividualIN benefitsPolicySwitch tieredPlanOverrideIN hide">
+											{{bcbsnc.thisMember.displayName}}'s Expenses Applied to <span class="benefitsINLabelA">Deductible</span>
+											<span class="benefitsINLabelAOOP hide">Out-of-Pocket</span>
+										</p>
+
+										<p class="benefits-policyIndividualFamilyBenefitsIN benefitsPolicySwitch tieredPlanOverrideIN hide">
+											Expenses Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyOther benefitsPolicySwitch tieredPlanOverrideIN hide">
+											Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyTieredIN benefitsPolicySwitch hide">
+											Amount remaining to meet
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelA">Out-of-Pocket Limit</span>
+										</p>
+
+										<h4 class="benefitsINValueMet"></h4>
+
+
+
+										<p class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelBHSA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyIndividualIN benefitsPolicySwitch hide">
+											<!--Individual-->Your <span class="benefitsINLabelB">Deductible</span>
+											<span class="benefitsINLabelBOOP hide">Out-of-Pocket</span>
+										</p>
+
+										<p class="benefits-policyIndividualFamilyBenefitsIN benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelB">Deductible</span>
+										</p>
+
+										<p class="benefits-policyOther benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelB">Deductible</span>
+										</p>
+
+										<h4 class="benefitsINValue"></h4>
+									</div>
+									<div id="benefitsINMetCoinsurance" class="hide">
+										<span class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											<span class="benefits-policySingle benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s</span>
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Your family's</span>
+											<span class="benefits-INFullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+										<span class="benefits-policyIndividualFamilyBenefitsIN benefitsPolicySwitch hide">Your family's
+											<span class="benefits-INFullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+										<span class="benefits-policyIndividualIN benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s
+											<span class="benefits-INFullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+										<span class="benefits-policyOther benefitsPolicySwitch hide">
+											<span class="benefits-policySingle benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s</span>
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Your family's</span>
+											<span class="benefits-INFullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+									</div>
+								</div>
+								<div class="col2">
+									<p><a href="javascript:void(0);" onclick="openWhatsThisDialog();" class="underLink benefitsWhatsThisLink" ng-show="bcbsnc.thisMember.selectedPolicy.showWhatsThis">What's this?</a></p>
+									<span id="BenefitsFacetsInNetworkGraph"></span>
+								</div>
+								#if ($wo.feature.healthcareSummaryReport)
+								<p class="benefitBookletLinks benefitBookletLinksLeft">View annual health care expenses and savings:<br><a href="/members/secure/claims/summaryreport.htm">Health Care Summary Report</a></p>
+								#end
+							</div>
+							<div class="col3">
+								<h3>Benefits Summary</h3>
+								<div class="bgLightblue pad6 smallTextSize">
+									<div>
+										<span class="selectedPolicy right">{{bcbsnc.thisMember.selectedPolicy.externalID}}</span>
+										<span class="bold">{{bcbsnc.thisMember.selectedPolicy.planName}}</span>
+									</div>
+									#if($wo.feature.manageHSA)
+										#if($wo.feature.fundVendor == 'HealthEquity')
+											<div ng-init="loadHEQHSABalance()">
+												<a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks && !bcbsnc.thisMember.selectedPolicy.heqHSABalances.hasError">Manage Your HSA</a>
+											</div>
+										#else
+											<a href="https://www.mybenefitwallet.com/" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks">Manage Your HSA</a>
+										#end
+									#end
+									#if($wo.feature.manageHRA)
+										#if ($date.difference($heqEffectiveDate, $dateFormat.format($loggedInMember.defaultPolicy.effectiveDate)).days >= 0)
+											#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).days > -90)
+												<li class="heq-sso-link"><a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank">Manage Your HRA</a></li>
+											#end
+										#else
+											#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).months > -6)
+												<li><a href="/members/secure/account/bcbsnc_redirect_consent.htm?SSO=HRA" target="_blank">Manage Your HRA</a></li>
+											#end
+										#end
+									#end
+								</div>
+								<div class="benefitsSummary" class="hmargin10 pad6">
+									<p class="benefitsCopay"></p>
+									<p class="benefitsDeductible"></p>
+									<p class="benefitsCoinsurance"></p>
+									<p class="benefitsRxDeductible"></p>
+									<p class="benefitsDrug"></p>
+									<p class="benefitsCoinDrug"></p>
+								</div>
+								<p ng-show="bcbsnc.thisMember.selectedPolicy.copayAfterDedPlan" style="font-size:11px;">*Copayments apply after your deductible has been met.</p>
+								<!-- benefit booklet links -->
+								<p class='benefitBookletLinks' style="clear: right;">
+									#if ($wo.feature.benefitBooklet || $wo.feature.costEstimator)
+									For more information about your plan:</br>
+									#end
+									#if($wo.feature.benefitBooklet)
+										#parse("members/secure/benefits/include_policy_changes.htm")
+										#if($wo.defaultPolicy.topaz)
+											<span ng-init="loadBenefitBooklets()"></span>
+											## <span ng-init="loadOARC()"></span>
+											<span ng-init="loadUCD()"></span>
+										#end
+										#parse("members/secure/benefits/include_benefits_booklets.htm")
+										## #parse("members/secure/benefits/include_oarc.htm")
+										#set($benefitBookletLinkText = "View Your Benefit Booklet")
+										#parse("members/secure/benefits/include_benefits_booklet.htm")<br/>
+										#parse("members/secure/benefits/include_benefits_summary.htm")
+									#end
+
+									#if($wo.feature.wellness)
+										&nbsp;<span><a href="/members/secure/wellness/preventive_care_guidelines.htm">Learn More About Preventive Care</a></span><br>
+									#end
+
+									#if($wo.feature.costEstimator)
+									<span><a href="/members/secure/benefits/cost_estimator.htm">Treatment Cost Estimator</a></span>
+									#end
+								</p>
+								#if($wo.defaultPolicy.isGroup && $wo.defaultPolicy.ASO && !$wo.thisMember.bcbsncMember)
+								<p class="sbcLink hide sbcLinkMessage">
+									If you receive an error, we apologize. Please contact your Plan Administrator (your employer) or customer service for a copy of your SBC.
+								</p>
+								#end
+							</div>  <!-- end of col3 -->
+						</div>
+						<table class="benefitsExpenseDetailsTable" id="benefitsExpenseDetailsTableIN" summary="out of pocket expenses applied to deductible and co-insurance">
+							<thead>
+								<tr>
+									<td>&nbsp;</td>
+									<th>APPLIED TO<br /><span class="tooltip" id="INTooltip-Deductible">DEDUCTIBLE</span></th>
+									<th>AMOUNT REMAINING<br />TO MEET <span class="tooltip" id="INTooltip-Deductible2">DEDUCTIBLE<span class="crossOver hide">*</span></span></th>
+									<th class=""><span class="preACA"></span><span class="aptxt">APPLIED TO<br /></span><span class="tooltip" id="INTooltip-Coinsurance">COINSURANCE</span><!--(MAX)--><span class="copaymt"> PAID</span><span class="crossOver hide">*</span></th>
+									<!--th ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)"><span class="aptxt">APPLIED TO<br /></span><span class="tooltip" id="INTooltip-Copay">COPAYMENTS</span></th-->
+									<th>TOTAL <span class="tooltip" id="INTooltip-OOPExpenses">OUT-OF-POCKET<br />EXPENSES</span></th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr class="total">
+									<td>Total</td>
+									<td class="col2" id="totalINDeductible"></td>
+									<td>&nbsp;</td>
+									<td class="col4" id="totalINCoinsurance"></td>
+									<!--td class="col5" id="totalINNCopay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)"></td-->
+									<td class="col5" id="totalINTotal"></td>
+								</tr>
+								<tr class="maximum">
+									<td>Maximum You Pay</td>
+									<td class="col2" id="maxINDeductible"></td>
+									<td>&nbsp;</td>
+									<td class="col4" id="maxINCoinsurance"></td>
+									<!--td class="col5" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)">&nbsp;</td-->
+									<td class="col5" id="maxINOutOfPocket">&nbsp;</td>
+								</tr>
+							</tbody>
+						</table>
+						<!-- <p id="deductibleCheckMark" class="hmargin25 vmargin25 hide"><img src="/assets/members/public/images/orange-check.png" /> = Deductible has been met.</p> -->
+						<p id="aggregateHSA-IN-OOP-Msg" class="hide">
+							One or more members on this policy have met the out-of-pocket limit. This means you may receive a bill for those members who have not met
+							the annual out-of-pocket limit.
+						</p>
+						<p class="legal">
+							#if($wo.defaultPolicy.isGroup)
+								The Summary of Benefits and Coverage is available free of charge for all group business.
+								<br /><br />
+							#end
+							#if($wo.defaultPolicy.isGroup && $wo.feature.pharmacy)
+								Benefits described are limited to those provided or administered by BCBSNC.  Your employer will provide information for any benefits administered by another vendor.
+								#if($wo.defaultPolicy.isState)
+
+									<!-- <span class="eightyTwentyMemberAddition"><br><br>"Applied to Out-of-Pocket Limit" includes amounts you have paid towards your deductibles, coinsurance and copayments. Coinsurance and copayments are combined in the table above. To view your coinsurance and copayments separately, go to your Claims Page. Expenses based on your responsibility. May not include claims received within the past 24 hours.</span> -->
+								#else
+								#end
+
+								<br /><br />
+							#end
+							<span class="crossOver hide"><b>
+								*NOTE: Both in-network and out-of-network expenses may have been applied to your or your family&#39;s in-network deductible and&#47;or coinsurance. For more details, view your
+								#parse( "members/secure/benefits/include_benefits_booklet.htm" )
+								.
+								</b><br /><br />
+							</span>
+							<span class="multipleMembers dependentView spouseView benefitsPolicySwitch hide">
+								Subscribers can see claims and benefits information for all the members on the policy.  A spouse or domestic partner can view claims and benefits usage for themselves and any dependents under age 18. Dependents can only view their own claims and benefits usage. Benefits usage totals may reflect benefits usage by all members on the policy, even if other member data is not displayed.
+								<br /><br />
+							</span>
+							<!-- !multiplier1 -->
+							<!--removing footnote as it is an old footnote and doesn't apply to most of current policies-->
+							<!--<span class="multipleMembers benefitsPolicySwitch hide">
+								<span class="benefits-policyBlueAdv benefitsPolicySwitch hide">
+									<span id="benefitsMultiplierPara">Please note <span class="benefitsFamilyMembersCount"></span>&nbsp;individuals on your BCBSNC health plan must fully meet their individual deductible before the family deductible is met. In some cases, out-of-pocket expenses will exceed the family deductible amount.</span>
+									<br /><br />
+								</span>
+							</span>-->
+							#if ($loggedInMember.getAttribute('GrandFatherFlag') == 'Y')
+								The out-of-pocket limit does not include copayments, deductibles, charges above the allowed amounts, or charges for non-covered services.
+								<span id="ooptxt">
+									#if ($loggedInMember.defaultPolicy.policyDto.companyNumber == '02')
+										Some self-funded groups may defined the out-of-pocket limit differently. For more information, please contact your plan administrator.
+									#end
+									<span class="eightyTwentyMemberAddition">Expenses based on your responsibility. May not include claims received within the past 24 hours. Out-of-network expenses may also have been applied to your in-network deductible and/or coinsurance totals.</span>
+								</span>
+							#else
+								<span class="benefits-policyCopay benefitsPolicySwitch eightyTwentyMember hide" id="hcpy" ng-show="!bcbsnc.thisMember.selectedPolicy.troop">
+									Expenses do not include copayments.
+								</span>
+								<span id="ooptxt_show_in_copay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)">"Applied to Out-of-Pocket Limit" includes amounts you have paid towards your deductibles, coinsurance and copayments.</span>
+								<span id="ooptxt_hide_in_copay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate < bcbsnc.schedule.troopEffectiveDate)">"Applied to Out-of-Pocket Limit" includes amounts you have paid toward your deductibles, coinsurance, and copayments. Coinsurance and copayments are combined in the table above. To view your coinsurance and copayments separately, go to your <a href="/members/secure/claims">Claims page</a>.</span>
+								<span class="eightyTwentyMemberAddition">Expenses based on your responsibility. May not include claims received within the past 24 hours.</span>
+								<span class="tieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan"><br /><br />Benefits are shown in three network-provider categories: In-Network (Tier 1), In-Network (Tier 2) and Out-of-Network. Benefits from Tier 1 can apply to Tier 2 and vice versa.</span>
+								<span class="BOtieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem"><br /><br />Benefits are shown in three network-provider categories: Preferred In-Network, Other In-Network and Out-of-Network. Benefits from Preferred In-Network can apply to Other In-Network and vice-versa.</span>
+								<span class="FacetsTieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan"><br /><br />Expenses are shown in three network-provider categories: Preferred Care, Standard Care and Out-of-Network. Expenses from Preferred Care can apply to Standard Care and vice-versa.</span>
+								<span class="benefits-policyNoOON benefitsPolicySwitch hide eightyTwentyMemberAddition" id="OONcont">
+									Out-of-network expenses may also have been applied to your in-network deductible and/or coinsurance totals.
+								</span>
+							#end
+							<br /><br />
+							Benefit information is not a guarantee of payment for services. BCBSNC may adjust any of this information as new information is received or if it is determined that claims were processed incorrectly. Expense status is available for health policies only. It typically takes two weeks or longer from date of service for providers to submit a claim. Expense information is only available for claims that have been processed.
+						</p>
+						<p id="tier4Message" class="hide footnote vmargin25">&dagger;For specialty drugs, you will pay <span id='tier4Percent'></span> &nbsp;of the total cost, with a minimum charge of <span id='tier4Dollar'></span> &nbsp;and a maximum charge of $100.</p>
+
+					</div>
+<!-- In Network: end -->
+
+<!-- In Network - Tier 2: start -->
+					<div id="benefitsFacetsTier2TabContent" class="tabContent" style="border-radius: 5px;border: 2px solid #DEDEDE;margin: 0px 15px;display: block;">
+						<div id="benefitsFacetsTier2TabContentDetail">
+							<div class="containleftcols" style="float:left;" ng-show="!bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">
+								<h3>Expense Summary</h3>
+								<div class="col1">
+									<div id="benefitsTIER2">
+										<!-- This block of text was removed during QB#11178 -->
+										<p class="benefits-policyHSAHRA benefitsPolicySwitch tieredPlanOverrideTIER2 hide">
+											Expenses Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelAHSA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyIndividualTIER2 benefitsPolicySwitch tieredPlanOverrideTIER2 hide">
+											{{bcbsnc.thisMember.displayName}}'s Expenses Applied to <span class="benefitsTIER2LabelA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyIndividualFamilyBenefitsTIER2 benefitsPolicySwitch tieredPlanOverrideTIER2 hide">
+											Expenses Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyOther benefitsPolicySwitch tieredPlanOverrideTIER2 hide">
+											Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyTieredTIER2 benefitsPolicySwitch hide">
+											Amount remaining to meet
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelA">Out-of-Pocket Limit</span>
+										</p>
+
+										<h4 class="benefitsTIER2ValueMet"></h4>
+
+										<p class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelBHSA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyIndividualTIER2 benefitsPolicySwitch hide">
+											<!--Individual-->Your <span class="benefitsTIER2LabelB">Deductible</span>
+										</p>
+
+										<p class="benefits-policyIndividualFamilyBenefitsTIER2 benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelB">Deductible</span>
+										</p>
+
+										<p class="benefits-policyOther benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelB">Deductible</span>
+										</p>
+
+										<h4 class="benefitsTIER2Value"></h4>
+									</div>
+									<div id="benefitsTIER2MetCoinsurance" class="hide">
+										<span class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											<span class="benefits-policySingle benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s</span>
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Your family's</span>
+											<span class="benefits-TIER2FullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+										<span class="benefits-policyIndividualFamilyBenefitsTIER2 benefitsPolicySwitch hide">Your family's
+											<span class="benefits-TIER2FullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+										<span class="benefits-policyIndividualTIER2 benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s
+											<span class="benefits-TIER2FullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+										<span class="benefits-policyOther benefitsPolicySwitch hide">
+											<span class="benefits-policySingle benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s</span>
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Your family's</span>
+											<span class="benefits-TIER2FullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+									</div>
+								</div>
+								<div class="col2">
+									<p><a href="javascript:void(0);" onclick="openWhatsThisDialog();" class="underLink benefitsWhatsThisLink" ng-show="bcbsnc.thisMember.selectedPolicy.showWhatsThis">What's this?</a></p>
+									<span id="BenefitsFacetsTier2NetworkGraph"></span>
+								</div>
+								#if ($wo.feature.healthcareSummaryReport)
+								<p class="benefitBookletLinks benefitBookletLinksLeft">View annual health care expenses and savings:<br><a href="/members/secure/claims/summaryreport.htm">Health Care Summary Report</a></p>
+								#end
+							</div> 
+							<!-- col3 for Non FacetsTieredPlan (Blue Select Plus Members) -->
+							<div class="col3" ng-show="!bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">
+								<h3>Benefits Summary</h3>
+								<div class="bgLightblue pad6 smallTextSize">
+									<!-- <div>
+										Subscriber ID: <span class="selectedPolicy">{{bcbsnc.thisMember.selectedPolicy.externalID}}</span></br>
+										<span class="bold">{{bcbsnc.thisMember.selectedPolicy.planName}}</span>
+									</div>-->
+									<div>
+										<span class="selectedPolicy right">{{bcbsnc.thisMember.selectedPolicy.externalID}}</span>
+										<span class="bold">{{bcbsnc.thisMember.selectedPolicy.lobName}}</span>
+									</div>
+									#if($wo.feature.manageHSA)
+										#if($wo.feature.fundVendor == 'HealthEquity')
+											<div ng-init="loadHEQHSABalance()">
+												<a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks && !bcbsnc.thisMember.selectedPolicy.heqHSABalances.hasError">Manage Your HSA</a>
+											</div>
+										#else
+											<a href="https://www.mybenefitwallet.com/" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks">Manage Your HSA</a>
+										#end
+									#end
+									#if($wo.feature.manageHRA)
+										#if ($date.difference($heqEffectiveDate, $dateFormat.format($loggedInMember.defaultPolicy.effectiveDate)).days >= 0)
+											#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).days > -90)
+												<li class="heq-sso-link"><a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank">Manage Your HRA</a></li>
+											#end
+										#else
+											#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).months > -6)
+												<li><a href="/members/secure/account/bcbsnc_redirect_consent.htm?SSO=HRA" target="_blank">Manage Your HRA</a></li>
+											#end
+										#end
+									#end
+								</div>
+								<div class="benefitsSummary" class="hmargin10 pad6">
+									<p class="benefitsCopay"></p>
+									<p class="benefitsDeductible"></p>
+									<p class="benefitsCoinsurance"></p>
+									<p class="benefitsRxDeductible"></p>
+									<p class="benefitsDrug"></p>
+								</div>
+								<!-- benefit booklet links -->
+								## QB10729
+								<p class='benefitBookletLinks' style="clear: right;">
+									<span ng-show="bcbsnc.thisMember.selectedPolicy.copayAfterDedPlan" style="font-size:11px;">*Copayments apply after your deductible has been met.</span>
+									<br><br>
+									#if ($wo.feature.benefitBooklet || $wo.feature.costEstimator)
+									For more information about your plan:<br>
+									#end
+									#if($wo.feature.benefitBooklet)
+										## parse("members/secure/benefits/include_policy_changes.htm")
+										#parse("members/secure/benefits/include_benefits_booklets.htm")
+										## #parse("members/secure/benefits/include_oarc.htm")
+										#set($benefitBookletLinkText = "View Your Benefit Booklet")
+										#parse("members/secure/benefits/include_benefits_booklet.htm")<br/>
+										#parse("members/secure/benefits/include_benefits_summary.htm")
+									#else
+										&nbsp;
+									#end
+
+									#if($wo.feature.costEstimator)
+									<span><a href="/members/secure/benefits/cost_estimator.htm">Treatment Cost Estimator</a></span>
+									#end
+								</p>
+								#if($wo.defaultPolicy.isGroup && $wo.defaultPolicy.ASO && !$wo.thisMember.bcbsncMember)
+								<p class="sbcLink hide sbcLinkMessage">
+									If you receive an error, we apologize. Please contact your Plan Administrator (your employer) or customer service for a copy of your SBC.
+								</p>
+								#end
+							</div>  <!-- end of col3  for Non FacetsTieredPlan (Blue Select Plus Members)-->
+						</div>
+						<div><h4><i class="fc-display-member" style="color: #04506E;"></i><strong style="padding-left:5px;">$wo.thisMember.displayName</strong></h4></div>
+						<div style="border-bottom:1px solid #DEDEDE; margin-bottom: 10px;"><p style="color: #b7b7b7;">Individual Progress (In-Network)</p></div>
+						<div style="width:48%; display: inline-block; margin-bottom: 20px;"><strong>Deductible</strong>
+						<p id="deductibleVal" style="margin-top:3px !important;"></p></div>
+						<div style="width:48%; display: inline-block;  margin-bottom: 20px;"><strong>Out-Of-Pocket Limit</strong>
+						<p id="oopVal" style="margin-top:3px !important;">Preferred Care / Standard Care</p></div>
+						<div class="bar-chart">
+							<p id="dedHeader1" class="blueColor"></p>
+							<p id="oopHeader1" class="blueColor"></p>
+							<p id="dedHeader2" class="blueColor"></p>
+							<p id="oopHeader2" class="blueColor"></p>
+							<p id="barHeaderDeductibleMet"></p>
+							<p id="barHeaderOOPMet"></p>
+							<div class="canvas-container" style="position: relative;">
+								<div class="blueColor" style="left: 52px;position: absolute;top: 95px;">Preferred</div>
+								<div class="blueColor" style="left: 77px;position: absolute;top: 106px;">Care</div>
+								<div id="individualDedPreferredBar" style="left: 70px;position: absolute;top: 118px;"></div>
+								<div class="individualDedPreferredToGo" id="individualDedPreferredToGoBar" style="right: 57px;position: absolute;top: 95px;"></div>
+								<div class="individualDedPreferredToGo" style="right: 63px;position: absolute;top: 107px;color:#606060;">to go</div>
+								<canvas id="deductibleCanvas"></canvas>
+								<div class="blueColor" style="left: 52px;position: absolute;top: -7px;">Standard</div>
+								<div class="blueColor" style="left: 77px;position: absolute;top: 5px;">Care</div>
+								<div id="individualDedStandardBar" style="left: 70px;position: absolute;top: 19px;"></div>
+								<div class="individualDedStandardToGo" id="individualDedStandardToGoBar" style="right: 57px;position: absolute;top: -6px;"></div>
+								<div class="individualDedStandardToGo" style="right: 63px;position: absolute;top: 5px;color:#606060;">to go</div>
+							</div>
+							<div class="canvas-container" style="position: relative;">
+								<div class="blueColor"  style="left: 52px;position: absolute;top: 95px;">Preferred</div>
+								<div class="blueColor"  style="left: 77px;position: absolute;top: 106px;">Care</div>
+								<div id="individualOOPPreferredBar" style="left: 70px;position: absolute;top: 118px;"></div>
+								<div class="individualOOPPreferredToGo" id="individualOOPPreferredToGoBar" style="right: 57px;position: absolute;top: 95px;"></div>
+								<div class="individualOOPPreferredToGo" style="right: 63px;position: absolute;top: 105px;color:#606060;">to go</div>
+								<canvas id="outOfPocketCanvas"></canvas>
+								<div class="blueColor"  style="left: 52px;position: absolute;top: -7px;">Standard</div>
+								<div class="blueColor"  style="left: 77px;position: absolute;top: 5px;">Care</div>
+								<div id="individualOOPStandardBar" style="left: 70px;position: absolute;top: 19px;"></div>
+								<div class="individualOOPStandardToGo" id="individualOOPStandardToGoBar" style="right: 57px;position: absolute;top: -8px;"></div>
+								<div class="individualOOPStandardToGo" style="right: 63px;position: absolute;top: 5px; color:#606060;">to go</div>
+							</div>
+						</div>	
+						<div id="deductiblePara" style="width:46%; display: inline-block; margin-bottom: 20px;padding: 5px 10px 5px 5px;vertical-align: top;"><p></p></div>
+						<div id="oopPara" style="width:46%; display: inline-block; margin-bottom: 20px;padding: 5px 5px 5px 10px;;vertical-align: top;"><p></p></div>
+						<p><i class="fc fc-solid-info" style="margin-right:4px;top: -10px;position: relative; font-size: 27px; color: #fdb81e;"></i><span style="width:80%;display:inline-block;"><strong> Important:</strong>Tier 1 and Tier 2 providers are now "Preferred Care" or "Standard Care". These new quality ratings may affect your costs of care.</span></p>
+						<p style="margin-left: 31px;" id="blueSelectContentPreferred"><strong>Preferred Care</strong> is quality care at a better value, so your out-of-pocket costs are lower. Blue Cross NC rates providers and facilities as Preferred for quality health outcomes, cost and efficiency (appropriate care / giving the right care). You may have know this as Tier 1.</p>
+						<p style="margin-left:31px;" id="blueSelectContentStandard"><strong>Standard Care</strong> providers and facilites do not have the Blue Cross NC Preferred rating to quality health outcomes, cost and efficiency (appropriate care / giving the right care). These providers and facilities meet our baseline quality standards, but your out-of-pocket costs will be higher. You may have known this as Tier 2.</p>
+						<a style="margin-left:31px;" href="" id="blueSelectContentAnr" style="text-decoration: none;" onclick="showBlueSelectContent()">Read more &#62;&#62;</a>
+						<!-- <p id="deductibleCheckMark" class="hmargin25 vmargin25 hide"><img src="/assets/members/public/images/orange-check.png" /> = Deductible has been met.</p> -->
+						<p id="tier4Message" class="hide footnote vmargin25">&dagger;For specialty drugs, you will pay <span id='tier4Percent'></span> &nbsp;of the total cost, with a minimum charge of <span id='tier4Dollar'></span> &nbsp;and a maximum charge of $100.</p>
+
+					</div>
+					<div id="facetsTieredPlanExpenseHeader" ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan" style="margin-top:20px;margin-bottom:10px;padding-left:15px;"><h3>Expense Details</h3></div>
+					<table ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan" class="benefitsExpenseDetailsTable" id="benefitsExpenseDetailsTableTIER2" summary="out of pocket expenses applied to deductible and co-insurance">
+						<thead>
+							<tr>
+								<td>&nbsp;</td>
+								<th>AMOUNT APPLIED TO<br /><span class="tooltip" id="TIER2Tooltip-Deductible">DEDUCTIBLE</span></th>
+								<th>AMOUNT REMAINING<br />TO MEET <span class="tooltip" id="TIER2Tooltip-Deductible2">DEDUCTIBLE<span class="crossOver hide">*</span></span></th>
+								<th class=""><span class="preACA"></span><span class="aptxt">AMOUNT APPLIED TO<br /></span><span class="tooltip" id="TIER2Tooltip-Coinsurance">COINSURANCE</span><!--(MAX)--><span class="copaymt"> PAID</span><span class="crossOver hide">*</span></th>
+								<!--th ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)"><span class="aptxt">APPLIED TO<br /></span><span class="tooltip" id="TIER2Tooltip-Copay">COPAYMENTS</span></th-->
+								<th>AMOUNT <span class="tooltip" id="TIER2Tooltip-OOPExpenses">OUT-OF-POCKET<br />EXPENSES</span></th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr class="total">
+								<td>Family total</td>
+								<td class="col2" id="totalTIER2Deductible"></td>
+								<td>&nbsp;</td>
+								<td class="col4" id="totalTIER2Coinsurance"></td>
+								<!--td class="col5" id="totalTIER2NCopay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)"></td-->
+								<td class="col5" id="totalTIER2Total"></td>
+							</tr>
+							<tr class="maximum">
+								<td>Maximum You Pay</td>
+								<td class="col2" id="maxTIER2Deductible"></td>
+								<td>&nbsp;</td>
+								<td class="col4" id="maxTIER2Coinsurance"></td>
+								<!--td class="col5" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)">&nbsp;</td-->
+								<td class="col5" id="maxTIER2OutOfPocket">&nbsp;</td>
+							</tr>
+						</tbody>
+					</table>
+					<!-- <p id="deductibleCheckMark" class="hmargin25 vmargin25 hide"><img src="/assets/members/public/images/orange-check.png" /> = Deductible has been met.</p> -->
+					<p id="facetsTieredPlanLegal" class="legal" ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">
+						Summary of benefits and coverage is avilable free of charge for all group business.<br><br>
+						#if($wo.defaultPolicy.isGroup && $wo.feature.pharmacy)
+							Benefits described are limited to those provided or administered by BCBSNC.  Your employer will provide information for any benefits administered by another vendor.
+
+							#if($wo.defaultPolicy.isState)
+
+								<!-- <span class="eightyTwentyMemberAddition"><br><br>"Applied to Out-of-Pocket Limit" includes amounts you have paid towards your deductibles, coinsurance and copayments. Coinsurance and copayments are combined in the table above. To view your coinsurance and copayments separately, go to your Claims Page. Expenses based on your responsibility. May not include claims received within the past 24 hours.</span> -->
+							#end
+
+							<br /><br />
+						#end
+						<span class="crossOver hide"><b>
+							*NOTE: Both in-network and out-of-network expenses may have been applied to your or your family&#39;s in-network deductible and&#47;or coinsurance. For more details, view your
+							#parse( "members/secure/benefits/include_benefits_booklet.htm" )
+							.
+							</b><br /><br />
+						</span>
+						<span class="multipleMembers dependentView spouseView benefitsPolicySwitch hide">
+							Subscribers can see claims and benefits information for all the members on the policy.  A spouse or domestic partner can view claims and benefits usage for themselves and any dependents under age 18. Dependents can only view their own claims and benefits usage. Benefits usage totals may reflect benefits usage by all members on the policy, even if other member data is not displayed.
+							<br /><br />
+						</span>
+						<!-- !multiplier1 -->
+						<!--removing footnote as it is an old footnote and doesn't apply to most of current policies-->
+						<!--<span class="multipleMembers benefitsPolicySwitch hide">
+                            <span class="benefits-policyBlueAdv benefitsPolicySwitch hide">
+                                <span id="benefitsMultiplierPara">Please note <span class="benefitsFamilyMembersCount"></span>&nbsp;individuals on your BCBSNC health plan must fully meet their individual deductible before the family deductible is met. In some cases, out-of-pocket expenses will exceed the family deductible amount.</span>
+                                <br /><br />
+                            </span>
+                        </span>-->
+						#if ($loggedInMember.getAttribute('GrandFatherFlag') == 'Y')
+							The out-of-pocket limit does not include copayments, deductibles, charges above the allowed amounts, or charges for non-covered services.
+							<span id="ooptxt_tier2">
+								#if ($loggedInMember.defaultPolicy.policyDto.companyNumber == '02')
+									Some self-funded groups may defined the out-of-pocket limit differently. For more information, please contact your plan administrator.
+								#end
+								<span class="eightyTwentyMemberAddition">Expenses based on your responsibility. May not include claims received within the past 24 hours. Out-of-network expenses may also have been applied to your in-network deductible and/or coinsurance totals.</span>
+							</span>
+						#else
+							<span class="benefits-policyCopay benefitsPolicySwitch eightyTwentyMember hide" id="hcpy" ng-show="!bcbsnc.thisMember.selectedPolicy.troop">
+								Expenses do not include copayments.
+							</span>
+							<span id="ooptxt_show_tier2_copay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)">"Applied to Out-of-Pocket Limit" includes amounts you have paid towards your deductibles, coinsurance and copayments.</span>
+							<!-- <span id="ooptxt_hide_tier2_copay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate < bcbsnc.schedule.troopEffectiveDate)">"Applied to Out-of-Pocket Limit" includes amounts you have paid toward your deductibles, coinsurance, and copayments. Coinsurance and copayments are combined in the table above. To view your coinsurance and copayments separately, go to your <a href="/members/secure/claims">Claims page</a>.</span> -->
+							<span class="eightyTwentyMemberAddition">Expenses based on your responsibility. May not include claims received within the past 24 hours.</span>
+							<span class="tieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan"><br /><br />Benefits are shown in three network-provider categories: In-Network (Tier 1), In-Network (Tier 2) and Out-of-Network. Benefits from Tier 1 can apply to Tier 2 and vice versa.</span>
+							<span class="BOtieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem"><br /><br />Benefits are shown in three network-provider categories: Preferred In-Network, Other In-Network and Out-of-Network. Benefits from Preferred In-Network can apply to Other In-Network and vice-versa.</span>
+							<span class="FacetsTieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan"><br /><br />Expenses are shown in three network-provider categories: Preferred Care, Standard Care and Out-of-Network. Expenses from Preferred Care can apply to Standard Care and vice-versa.</span>
+							<span class="benefits-policyNoOON benefitsPolicySwitch hide" id="OONcont">
+								<span class="eightyTwentyMemberAddition">Out-of-network expenses may also have been applied to your in-network deductible and/or coinsurance totals.</span>
+							</span>
+						#end
+						<br /><br />
+						Benefit information is not a guarantee of payment for services. BCBSNC may adjust any of this information as new information is received or if it is determined that claims were processed incorrectly. Expense status is available for health policies only. It typically takes two weeks or longer from date of service for providers to submit a claim. Expense information is only available for claims that have been processed.
+					</p>
+<!-- In Network - Tier 2: end -->
+
+<!-- Out-of-Network: start -->
+					<div id="benefitsFacetsOutOfNetworkTabContent" class="tabContent" style="border-radius: 5px; border: 2px solid rgb(222, 222, 222); margin: 0px 15px; display: block;">
+						<div id="benefitsFacetsOutOfNetworkTabContentDetail">
+							<div class="containleftcols" style="float: left;" ng-show="!bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">
+							    <h3>Expense Summary</h3>
+								<div class="col1">
+									<div id="benefitsOON">
+										<p id="benefitsOONPolicyExpenses" class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											Expenses Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span> Out-of-Network
+											<span class="benefitsOONLabelAHSA">Deductible</span>
+										</p>
+										<p id="benefitsOONPolicyExpenses" class="benefits-policyIndividualOON benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s Expenses Applied to Out-of-Network <span class="benefitsOONLabelA">Deductible</span></p>
+										<p id="benefitsOONPolicyExpenses" class="benefits-policyIndividualFamilyBenefitsOON benefitsPolicySwitch hide">
+											Expenses Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											Out-of-Network
+											<span class="benefitsOONLabelA">Deductible</span>
+										</p>
+										<p id="benefitsOONPolicyExpenses" class="benefits-policyOther benefitsPolicySwitch hide">
+											Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											Out-of-Network
+											<span class="benefitsOONLabelA">Deductible</span>
+										</p>
+										<h4 class="benefitsOONValueMet"></h4>
+
+										<p id="benefitsOONPolicyMax" class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											Out-of-Network
+										<span class="benefitsOONLabelBHSA">Deductible</span>
+										</p>
+										<p id="benefitsOONPolicyMax" class="benefits-policyIndividualOON benefitsPolicySwitch hide">
+											Individual Out-of-Network
+											<span class="benefitsOONLabelB">Deductible</span>
+										</p>
+										<p id="benefitsOONPolicyMax" class="benefits-policyIndividualFamilyBenefitsOON benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											Out-of-Network
+											<span class="benefitsOONLabelB">Deductible</span>
+										</p>
+										<p id="benefitsOONPolicyMax" class="benefits-policyOther benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											Out-of-Network
+											<span class="benefitsOONLabelB">Deductible</span>
+										</p>
+										<h4 class="benefitsOONValue"></h4>
+									</div>
+									<div id="benefitsOONMetCoinsurance" class="hide">
+										<span class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											<span class="benefits-policySingle benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s</span>
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Your family's</span>
+											<span class="benefits-OONFullCoverage"></span>
+										</span>
+										<span class="benefits-policyIndividualFamilyBenefitsOON benefitsPolicySwitch hide">
+											Your <span class="benefits-policyFamily benefitsPolicySwitch hide">family's</span>
+											<span class="benefits-OONFullCoverage"></span>
+										</span>
+										<span class="benefits-policyIndividualOON benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s
+											<span class="benefits-OONFullCoverage"></span>
+										</span>
+										<span class="benefits-policyOther benefitsPolicySwitch hide">
+											<span class="benefits-policySingle benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s</span>
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Your family's</span>
+											<span class="benefits-OONFullCoverage"></span>
+										</span>
+									</div>
+								</div>
+								<div class="col2">
+									<p><a href="javascript:void(0);" onclick="openWhatsThisDialog();" class="underLink benefitsWhatsThisLink" ng-show="bcbsnc.thisMember.selectedPolicy.showWhatsThis">What's this?</a></p>
+									<span id="BenefitsFacetsOutOfNetworkGraph"></span>
+								</div>
+							</div>
+							<div class="col3" ng-show="!bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">
+							    <h3>Benefits Summary</h3>
+								<div class="bgLightblue pad6 smallTextSize">
+									<div>
+										<span class="selectedPolicy right">{{bcbsnc.thisMember.selectedPolicy.externalID}}</span>
+										<span class="bold">{{bcbsnc.thisMember.selectedPolicy.lobName}}</span>
+									</div>
+									#if($wo.feature.manageHSA)
+										#if($wo.feature.fundVendor == 'HealthEquity')
+											<a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks && !bcbsnc.thisMember.selectedPolicy.heqHSABalances.hasError">Manage Your HSA</a>
+										#else
+											<a href="https://www.mybenefitwallet.com/" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks">Manage Your HSA</a>
+										#end
+									#end
+									#if($wo.feature.manageHRA)
+										#if ($date.difference($heqEffectiveDate, $dateFormat.format($loggedInMember.defaultPolicy.effectiveDate)).days >= 0)
+											#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).days > -90)
+												<li class="heq-sso-link"><a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank">Manage Your HRA</a></li>
+											#end
+										#else
+											#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).months > -6)
+												<li><a href="/members/secure/account/bcbsnc_redirect_consent.htm?SSO=HRA" target="_blank">Manage Your HRA</a></li>
+											#end
+										#end
+									#end
+								</div>
+								<div class="benefitsSummary" class="hmargin10 pad6">
+									<p class="benefitsCopay"></p>
+									<p class="benefitsDeductible"></p>
+									<p class="benefitsCoinsurance"></p>
+									<p class="benefitsRxDeductible"></p>
+									<p class="benefitsDrug"></p>
+								</div>
+									<!-- benefit booklet links -->
+								<p class='benefitBookletLinks' style="clear: right;">
+								    #if ($wo.feature.benefitBooklet || $wo.feature.costEstimator)
+                    For more information about your plan:<br>
+                    #end
+                    #if($wo.feature.benefitBooklet)
+										#parse("members/secure/benefits/include_policy_changes.htm")
+										#parse("members/secure/benefits/include_benefits_booklets.htm")
+										## #parse("members/secure/benefits/include_oarc.htm")
+										#set($benefitBookletLinkText = "View Your Benefit Booklet")
+										#parse("members/secure/benefits/include_benefits_booklet.htm")<br/>
+                    #parse("members/secure/benefits/include_benefits_summary.htm")
+                    #else
+                        &nbsp;
+                    #end
+								</p>
+								#if($wo.defaultPolicy.isGroup && $wo.defaultPolicy.ASO && !$wo.thisMember.bcbsncMember)
+								<p class="sbcLink hide sbcLinkMessage">
+									If you receive an error, we apologize. Please contact your Plan Administrator (your employer) or customer service for a copy of your SBC.
+								</p>
+								#end
+							</div>
+						</div>
+						<img id="checkmarkImgPrefDed" src="/assets/members/public/images/check-solid-white-green.png" alt="check mark image" style="border:1px solid #d3d3d3;display: none;">
+						<img id="checkmarkImgStandardDed" src="/assets/members/public/images/check-solid-white-green.png" alt="check mark image" style="border:1px solid #d3d3d3;display: none;">
+						<div><h4><i class="fc-display-member" style="color: #04506E;"></i><strong style="padding-left:5px;">$wo.thisMember.displayName</strong></h4></div>
+						<div style="border-bottom:1px solid #DEDEDE; margin-bottom: 10px;"><p style="color: #b7b7b7;">Individual Progress (Out-of-Network)</p></div>
+						<div style="width:48%; display: inline-block; margin-bottom: 20px;"><strong>Deductible</strong></div>
+						<div style="width:48%; display: inline-block;  margin-bottom: 20px;"><strong>Out-Of-Pocket Limit</strong></div>
+						<div class="bar-chart">
+							<p id="dedOONHeader1" class="blueColor"></p>
+							<p id="oopOONHeader1" class="blueColor"></p>
+							<p id="dedOONHeader2" class="blueColor"></p>
+							<p id="oopOONHeader2" class="blueColor"></p>
+							<p id="barOONHeaderDeductibleMet"></p>
+							<p id="barOONHeaderOOPMet"></p>
+							<div class="canvas-container" style="position: relative;">
+								<!-- <div class="blueColor" style="left: 58px;position: absolute;top: 95px;">Preferred</div>
+								<div class="blueColor" style="left: 82px;position: absolute;top: 105px;">Care</div>
+								<div id="individualDedPreferredBar" style="left: 74px;position: absolute;top: 118px;"></div>
+								<div class="individualDedPreferredToGo" id="individualDedPreferredToGoBar" style="right: 57px;position: absolute;top: 95px;"></div>
+								<div class="individualDedPreferredToGo" style="right: 63px;position: absolute;top: 107px;color:#606060;">to go</div> -->
+								<canvas id="deductibleOONCanvas"></canvas>
+								<div class="blueColor" style="left: 16px;position: absolute;top: -7px;">Out of Network</div>
+								<!-- <div class="blueColor" style="left: 75px;position: absolute;top: 5px;">Care</div> -->
+								<div id="individualOONDedStandardBar" style="left: 75px;position: absolute;top: 5px;"></div>
+								<div class="individualOONDedStandardToGo" id="individualOONDedStandardToGoBar" style="right: 57px;position: absolute;top: -6px;"></div>
+								<div class="individualOONDedStandardToGo" style="right: 58px;position: absolute;top: 5px;color:#606060;">to go</div>
+							</div>
+							<div class="canvas-container" style="position: relative;">
+								<!-- <div class="blueColor"  style="left: 58px;position: absolute;top: 95px;">Preferred</div>
+								<div class="blueColor"  style="left: 82px;position: absolute;top: 105px;">Care</div>
+								<div id="individualOOPPreferredBar" style="left: 74px;position: absolute;top: 118px;"></div>
+								<div class="individualOOPPreferredToGo" id="individualOOPPreferredToGoBar" style="right: 57px;position: absolute;top: 95px;"></div>
+								<div class="individualOOPPreferredToGo" style="right: 63px;position: absolute;top: 105px;color:#606060;">to go</div> -->
+								<canvas id="outOfPocketOONCanvas"></canvas>
+								<div class="blueColor"  style="left: 16px;position: absolute;top: -7px;">Out of Network</div>
+								<!-- <div class="blueColor"  style="left: 75px;position: absolute;top: 5px;">Care</div> -->
+								<div id="individualOONOOPStandardBar" style="left: 75px;position: absolute;top: 5px;"></div>
+								<div class="individualOONOOPStandardToGo" id="individualOONOOPStandardToGoBar" style="right: 57px;position: absolute;top: -8px;"></div>
+								<div class="individualOONOOPStandardToGo" style="right: 58px;position: absolute;top: 5px; color:#606060;">to go</div>
+							</div>
+						</div>	
+						
+						<!-- <p class="hmargin25 vmargin25"><img src="/assets/members/public/images/orange-check.png" /> = Deductible has been met.</p> -->
+						<p id="aggregateHSA-OON-OOP-Msg" class="hide">
+							One or more members on this policy have met the out-of-pocket limit. This means you may receive a bill for those members who have not met
+							the annual out-of-pocket limit.
+						</p>
+				</div>
+				<div id="facetsTieredPlanExpenseHeaderOON" ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan" style="margin-top:20px;margin-bottom:10px;padding-left:15px;"><h3>Expense Details</h3></div>
+				<table class="benefitsExpenseDetailsTable" id="benefitsExpenseDetailsTableOON" summary="out of pocket expenses applied to deductible and co-insurance">
+							<thead>
+								<tr>
+									<td>&nbsp;</td>
+									<th>AMOUNT APPLIED TO<br /><span class="tooltip" id="OONTooltip-Deductible">DEDUCTIBLE</span></th>
+									<th>AMOUNT REMAINING<br />TO MEET <span class="tooltip" id="OONTooltip-Deductible2">DEDUCTIBLE</span></th>
+									<th class=""><span class="preACA"></span><span class="aptxt">AMOUNT APPLIED TO<br /></span><span class="tooltip" id="OONTooltip-Coinsurance">COINSURANCE</span><!-- (MAX) --><span class="copaymt"> PAID</span></th>
+									<!--th ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)"><span class="aptxt">APPLIED TO<br /></span><span class="tooltip" id="OONTooltip-Copay">COPAYMENTS</span></th-->
+									<th>AMOUNT <span class="tooltip" id="OONTooltip-OOPExpenses">OUT-OF-POCKET<br />EXPENSES</span></th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr class="total">
+									<td>Total</td>
+									<td class="col2" id="totalOONDeductible"></td>
+									<td>&nbsp;</td>
+									<td class="col4" id="totalOONCoinsurance"></td>
+									<!--td class="col5" id="totalOONCopay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)"></td-->
+									<td class="col5" id="totalOONTotal"></td>
+								</tr>
+								<tr class="maximum">
+									<td>Maximum You Pay</td>
+									<td class="col2" id="maxOONDeductible"></td>
+									<td>&nbsp;</td>
+									<td class="col4" id="maxOONCoinsurance"></td>
+									<!--td class="col5" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)">&nbsp;</td-->
+									<td class="col5" id="maxOONOutOfPocket">&nbsp;</td>
+								</tr>
+							</tbody>
+				</table>
+				<p class="legal" id="facetsTieredPlanOONLegal">
+					    Summary of benefits and coverage is avilable free of charge for all group business.<br><br>
+						<span class="multipleMembers dependentView spouseView benefitsPolicySwitch hide">
+							Subscribers can see claims and benefits information for all the members on the policy.  A spouse or domestic partner can view claims and benefits usage for themselves and any dependents under age 18. Dependents can only view their own claims and benefits usage. Benefits usage totals may reflect benefits usage by all members on the policy, even if other member data is not displayed.
+							<br /><br />
+						</span>
+						<!--removing footnote as it is an old footnote and doesn't apply to most of current policies-->
+						<!--<span class="multipleMembers benefitsPolicySwitch hide">
+                            <span class="benefits-policyBlueAdv benefitsPolicySwitch hide">
+                                <span id="benefitsMultiplierPara">Please note <span class="benefitsFamilyMembersCount"></span>&nbsp;individuals on your BCBSNC health plan must fully meet their individual deductible before the family deductible is met. In some cases, out-of-pocket expenses will exceed the family deductible amount.</span>
+                                <br /><br />
+                            </span>
+                        </span>-->
+						<span class="benefits-policyCopay benefitsPolicySwitch hide" id="hcpy">
+							#if ($loggedInMember.getAttribute('GrandFatherFlag') == 'Y')
+								The out-of-pocket limit does not include copayments, deductibles, charges above the allowed amounts, or charges for non-covered services.
+								#if ($loggedInMember.defaultPolicy.policyDto.companyNumber == '02')
+									Some self-funded groups may define the out-of-pocket limit differently. For more information, please contact your plan administrator.
+								#end
+							#else
+							Expenses do not include copayments.
+							#end
+						</span>
+						<span id="ooptxt_show_oon_copay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)">"Applied to Out-of-Pocket Limit" includes amounts you have paid towards your deductibles, coinsurance and copayments.</span>
+						<!-- <span id="ooptxt_hide_oon_copay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate < bcbsnc.schedule.troopEffectiveDate)">"Applied to Out-of-Pocket Limit" includes amounts you have paid toward your deductibles, coinsurance, and copayments. Coinsurance and copayments are combined in the table above. To view your coinsurance and copayments separately, go to your <a href="/members/secure/claims">Claims page</a>.</span> -->
+							<span class="eightyTwentyMemberAddition">Expenses based on your responsibility. May not include claims received within the past 24 hours.</span>
+						<span class="tieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan"><br /><br />Benefits are shown in three network-provider categories: In-Network (Tier 1), In-Network (Tier 2) and Out-of-Network. Benefits from Tier 1 can apply to Tier 2 and vice versa.</span>
+						<span class="BOtieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem"><br /><br />Benefits are shown in three network-provider categories: Preferred In-Network, Other In-Network and Out-of-Network. Benefits from Preferred In-Network can apply to Other In-Network and vice-versa.</span>
+						<span class="FacetsTieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan"><br /><br />Expenses are shown in three network-provider categories: Preferred Care, Standard Care and Out-of-Network. Expenses from Preferred Care can apply to Standard Care and vice-versa.</span>
+						<span class="benefits-policyNoOON benefitsPolicySwitch hide" id="OONcont">
+						<!-- Out-of-network expenses also count toward your in-network coinsurance totals.  -->
+							<span class="eightyTwentyMemberAddition">Out-of-network expenses may also have been applied to your in-network deductible and/or coinsurance totals.</span>
+						</span>
+						<br /><br />
+						Benefit information is not a guarantee of payment for services. BCBSNC may adjust any of this information as new information is received or if it is determined that claims were processed incorrectly. Expense status is available for health policies only. It typically takes two weeks or longer from date of service for providers to submit a claim. Expense information is only available for claims that have been processed.
+					</p>
+					</div>
+<!-- Out-of-Network: end --> 
+		<!-- Prescriptions -->
+					<div id="benefitsPrescriptionsTabContent" class="tabContent">
+						<div class="prescriptionsContent">
+							<h3>Summary of prescription expenses</h3>
+							<p>You have a prescription deductible of:
+							<h4 class="amount green rxDeductible"></h4>
+							<p>You have a benefit maximum of:</p>
+							<h4 class="amount blue rxBenefitMax"></h4>
+						</div>
+						<div class="prescriptionsContent">
+							<p><a href="/members/secure/claims/?tab=prescription" class="vmargin10">View Prescriptions Claims</a></p>
+							<p>
+								There is a <span class="rxBenefitMax"></span> benefit maximum per member per benefit period for brand name drugs.
+								Brand drugs with an approved amount over $500 per 30-day supply do not apply to the benefit maximum.
+								Generic drugs have no benefit period maximums.
+							</p>
+						</div>
+						<p class="legal clear">Benefit information is not a guarantee of payment for services. BCBSNC may adjust any of this information as new information is received or if it is determined that claims were processed incorrectly. Expense status is available for health policies only. It typically takes two weeks or longer from date of service for providers to submit a claim. Expense information is only available for claims that have been processed.</p>
+					</div>
+					<div id="benefitsCOnlyTabContent" class="tabContent">
+						<p>Your contraceptives-only plan reimburses for federally-mandated women's contraceptive services.  These services are reimbursed at 100% if received from an in-network provider. </p>
+
+						<p>Covered services include:
+							<ul>
+							<li>Education and counseling related to contraceptives and sterilization</li>
+							<li>Certain sterilization procedures</li>
+							<li>The insertion or removal of, as well as any medically necessary examinations associated with the use of, intrauterine devices, diaphragms, injectable contraceptives and implanted hormonal contraceptives</li>
+							<li>Contraceptive drugs and devices when coverage is mandated by federal law (prescription required)</li>
+							</ul>
+						</p>
+
+						<p>The following conditions must be met for these services to be reimbursed:
+							<ul>
+								<li>Services are designated as women's contraceptive services under federal law. (See <a href="http://www.bcbsnc.com/preventive">bcbsnc.com/preventive</a> for up-to-date information.)</li>
+								<li>Services are performed by an in-network provider, unless otherwise specified.</li>
+								<li>Services are provided in an office-based, outpatient or ambulatory setting or urgent care center.  (Note: Tubal ligations may be reimbursed when performed inpatient.)</li>
+							</ul>
+						</p>
+
+						<p>No reimbursement will be provided for out-of-network contraceptive services, with the exception of contraceptive drugs and devices.  If you receive contraceptive drugs and devices from an out-of-network pharmacy, you may be required to pay for charges over the allowed amount, the difference between the allowed amount and the billed charge.</p>
+						<br />
+						<p><a href="/assets/members/public/pdf/ContraceptiveOnlyBooklet.pdf" target="_blank">View Your Benefit Booklet</a> (pdf)</p>
+						<br /><br /><br /><br />
+
+
+                    </div>
+			#set ($parm = $request.getParameter("tb"))
+                     #if($wo.defaultPolicy.groupNumber == '069114')
+
+                         <div class="footnote vmargin25" style="padding: 0 10px;">
+                            <p>The Blue Rewards program is only available for City of Durham employees and dependents covered under a PPO Core or Basic plan.</p>
+                            <p>BCBSNC and the City of Durham reserve the right to change or discontinue Blue Rewards at any time, including changing point values and available rewards, without prior notification. Points are only available for use during the plan year in which they are awarded and do not roll over from year-to-year. Once you have met the Plan's out-of-pocket limit for the plan year, you are no longer eligible to earn Blue Rewards points. Decisions regarding medical care should be made with the advice of a doctor. Receipt of rewards may have tax implications. Consult your tax advisor with any questions.</p>
+                            <p>BLUE CROSS<sup>&reg;</sup>, BLUE SHIELD<sup>&reg;</sup> and the Cross and Shield symbols are marks of the Blue Cross and Blue Shield Association, an association of independent Blue Cross and Blue Shield Plans. <sup>&reg;1</sup>, SM1 Mark of Blue Cross and Blue Shield of North Carolina. All other marks and trade names are the property of their respective owners. Blue Cross and Blue Shield of North Carolina is an independent licensee of the Blue Cross and Blue Shield Association. 8/15.</p>
+                        </div>
+ 						#end
+
+				</div>
+                </div>
+<!--  ************************************************************
+	******** FACETS TIERED PLAN ELSE BELOW *****************************
+ -->
+				## #else
+				<div id="nonFacetsTieredPlanWrapper">
+				<div class="tabContainer hide">
+					<div id="benefitsPolicyContainer" class="right">
+						#parse( "members/secure/includes/benefits-policySelect.htm" )
+					</div>
+
+					<h3>Your Benefits Usage</h3>
+
+					<ul class="memberTabs">
+						<li id="benefitsInNetworkTab" class="activeTab" tabindex="0">
+							<!--  <span ng-show="bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem">Preferred </span> In-Network <span ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan">Tier 1</span> -->
+							<span ng-show="!bcbsnc.thisMember.selectedPolicy.isTieredPlan && !bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem && !bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">In-Network</span>
+							<span ng-show="bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem">Preferred In-Network</span>
+							<span ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan">In-Network Tier 1</span>
+							<span ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">Preferred Care</span>
+						</li>
+						<li id="benefitsTier2Tab" class="inactiveTab" tabindex="0" ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan || bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem || bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">
+							<span ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan">In-Network Tier 2</span>
+							<span ng-show="bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem">Other In-Network</span>
+							<span ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan">Standard Care</span>
+						</li>
+						<li id="benefitsOutOfNetworkTab" class="inactiveTab benefits-policyNoOON benefitsPolicySwitch hide" tabindex="0">
+							Out-of-Network
+						</li>
+<!-- 						<li id="benefitsPrescriptionsTab" class="inactiveTab hide">
+							Prescriptions
+						</li> -->
+					</ul>
+
+		<!-- In-Network tab -->
+					<div id="benefitsInNetworkTabContent" class="tabContent">
+						<div id="benefitsInNetworkTabContentDetail">
+							<div class="containleftcols" style="float:left;">
+								<h3>Expense Summary</h3>
+								<div class="col1">
+									<div id="benefitsIN">
+										<!-- This block of text was removed during QB#11178 -->
+										<p class="benefits-policyHSAHRA benefitsPolicySwitch tieredPlanOverrideIN hide">
+											Expenses Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelAHSA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyIndividualIN benefitsPolicySwitch tieredPlanOverrideIN hide">
+											{{bcbsnc.thisMember.displayName}}'s Expenses Applied to <span class="benefitsINLabelA">Deductible</span>
+											<!-- <span class="benefitsINLabelAOOP hide">Out-of-Pocket</span> -->
+										</p>
+
+										<p class="benefits-policyIndividualFamilyBenefitsIN benefitsPolicySwitch tieredPlanOverrideIN hide">
+											Expenses Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyOther benefitsPolicySwitch tieredPlanOverrideIN hide">
+											Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyTieredIN benefitsPolicySwitch hide">
+											Amount remaining to meet
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelA">Out-of-Pocket Limit</span>
+										</p>
+
+										<h4 class="benefitsINValueMet"></h4>
+
+
+
+										<p class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelBHSA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyIndividualIN benefitsPolicySwitch hide">
+											<!--Individual-->Your <span class="benefitsINLabelB">Deductible</span>
+											<!-- <span class="benefitsINLabelBOOP hide">Out-of-Pocket</span> -->
+										</p>
+
+										<p class="benefits-policyIndividualFamilyBenefitsIN benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelB">Deductible</span>
+										</p>
+
+										<p class="benefits-policyOther benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsINLabelB">Deductible</span>
+										</p>
+
+										<h4 class="benefitsINValue"></h4>
+									</div>
+									<div id="benefitsINMetCoinsurance" class="hide">
+										<span class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											<span class="benefits-policySingle benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s</span>
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Your family's</span>
+											<span class="benefits-INFullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+										<span class="benefits-policyIndividualFamilyBenefitsIN benefitsPolicySwitch hide">Your family's
+											<span class="benefits-INFullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+										<span class="benefits-policyIndividualIN benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s
+											<span class="benefits-INFullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+										<span class="benefits-policyOther benefitsPolicySwitch hide">
+											<span class="benefits-policySingle benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s</span>
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Your family's</span>
+											<span class="benefits-INFullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+									</div>
+								</div>
+								<div class="col2">
+									<p><a href="javascript:void(0);" onclick="openWhatsThisDialog();" class="underLink benefitsWhatsThisLink" ng-show="bcbsnc.thisMember.selectedPolicy.showWhatsThis">What's this?</a></p>
+									<span id="BenefitsInNetworkGraph"></span>
+								</div>
+								#if ($wo.feature.healthcareSummaryReport)
+								<p class="benefitBookletLinks benefitBookletLinksLeft">View annual health care expenses and savings:<br><a href="/members/secure/claims/summaryreport.htm">Health Care Summary Report</a></p>
+								#end
+							</div>
+							<div class="col3">
+								<h3>Benefits Summary</h3>
+								<div class="bgLightblue pad6 smallTextSize">
+									<div>
+										<span class="selectedPolicy right">{{bcbsnc.thisMember.selectedPolicy.externalID}}</span>
+										<span class="bold">{{bcbsnc.thisMember.selectedPolicy.planName}}</span>
+									</div>
+									#if($wo.feature.manageHSA)
+										#if($wo.feature.fundVendor == 'HealthEquity')
+											<div ng-init="loadHEQHSABalance()">
+												<a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks && !bcbsnc.thisMember.selectedPolicy.heqHSABalances.hasError">Manage Your HSA</a>
+											</div>
+										#else
+											<a href="https://www.mybenefitwallet.com/" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks">Manage Your HSA</a>
+										#end
+									#end
+									#if($wo.feature.manageHRA)
+										#if ($date.difference($heqEffectiveDate, $dateFormat.format($loggedInMember.defaultPolicy.effectiveDate)).days >= 0)
+											#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).days > -90)
+												<li class="heq-sso-link"><a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank">Manage Your HRA</a></li>
+											#end
+										#else
+											#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).months > -6)
+												<li><a href="/members/secure/account/bcbsnc_redirect_consent.htm?SSO=HRA" target="_blank">Manage Your HRA</a></li>
+											#end
+										#end
+									#end
+								</div>
+								<div class="benefitsSummary" class="hmargin10 pad6">
+									<p class="benefitsCopay"></p>
+									<p class="benefitsDeductible"></p>
+									<p class="benefitsCoinsurance"></p>
+									<p class="benefitsRxDeductible"></p>
+									<p class="benefitsDrug"></p>
+									<p class="benefitsCoinDrug"></p>
+								</div>
+								<p ng-show="bcbsnc.thisMember.selectedPolicy.copayAfterDedPlan" style="font-size:11px;">*Copayments apply after your deductible has been met.</p>
+								<!-- benefit booklet links -->
+								<p class='benefitBookletLinks' style="clear: right;">
+									#if ($wo.feature.benefitBooklet || $wo.feature.costEstimator)
+									For more information about your plan:</br>
+									#end
+									#if($wo.feature.benefitBooklet)
+										#parse("members/secure/benefits/include_policy_changes.htm")
+										#if($wo.defaultPolicy.topaz)
+											<span ng-init="loadBenefitBooklets()"></span>
+											## <span ng-init="loadOARC()"></span>
+											<span ng-init="loadUCD()"></span>
+										#end
+										#parse("members/secure/benefits/include_benefits_booklets.htm")
+										## #parse("members/secure/benefits/include_oarc.htm")
+										#set($benefitBookletLinkText = "View Your Benefit Booklet")
+										#parse("members/secure/benefits/include_benefits_booklet.htm")<br/>
+										#parse("members/secure/benefits/include_benefits_summary.htm")
+									#end
+
+									#if($wo.feature.wellness)
+										&nbsp;<span><a href="/members/secure/wellness/preventive_care_guidelines.htm">Learn More About Preventive Care</a></span><br>
+									#end
+
+									#if($wo.feature.costEstimator)
+									<span><a href="/members/secure/benefits/cost_estimator.htm">Treatment Cost Estimator</a></span>
+									#end
+								</p>
+								#if($wo.defaultPolicy.isGroup && $wo.defaultPolicy.ASO && !$wo.thisMember.bcbsncMember)
+								<p class="sbcLink hide sbcLinkMessage">
+									If you receive an error, we apologize. Please contact your Plan Administrator (your employer) or customer service for a copy of your SBC.
+								</p>
+								#end
+							</div>  <!-- end of col3 -->
+						</div>
+						<table class="benefitsExpenseDetailsTable" id="benefitsExpenseDetailsTableIN" summary="out of pocket expenses applied to deductible and co-insurance">
+							<thead>
+								<tr>
+									<td>&nbsp;</td>
+									<th>APPLIED TO<br /><span class="tooltip" id="INTooltip-Deductible">DEDUCTIBLE</span></th>
+									<th>AMOUNT REMAINING<br />TO MEET <span class="tooltip" id="INTooltip-Deductible2">DEDUCTIBLE<span class="crossOver hide">*</span></span></th>
+									<th class=""><span class="preACA"></span><span class="aptxt">APPLIED TO<br /></span><span class="tooltip" id="INTooltip-Coinsurance">COINSURANCE</span><!--(MAX)--><span class="copaymt"> PAID</span><span class="crossOver hide">*</span></th>
+									<!--th ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)"><span class="aptxt">APPLIED TO<br /></span><span class="tooltip" id="INTooltip-Copay">COPAYMENTS</span></th-->
+									<th>TOTAL <span class="tooltip" id="INTooltip-OOPExpenses">OUT-OF-POCKET<br />EXPENSES</span></th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr class="total">
+									<td>Total</td>
+									<td class="col2" id="totalINDeductible"></td>
+									<td>&nbsp;</td>
+									<td class="col4" id="totalINCoinsurance"></td>
+									<!--td class="col5" id="totalINNCopay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)"></td-->
+									<td class="col5" id="totalINTotal"></td>
+								</tr>
+								<tr class="maximum">
+									<td>Maximum You Pay</td>
+									<td class="col2" id="maxINDeductible"></td>
+									<td>&nbsp;</td>
+									<td class="col4" id="maxINCoinsurance"></td>
+									<!--td class="col5" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)">&nbsp;</td-->
+									<td class="col5" id="maxINOutOfPocket">&nbsp;</td>
+								</tr>
+							</tbody>
+						</table>
+						<!-- <p id="deductibleCheckMark" class="hmargin25 vmargin25 hide"><img src="/assets/members/public/images/orange-check.png" /> = Deductible has been met.</p> -->
+						<p id="aggregateHSA-IN-OOP-Msg" class="hide">
+							One or more members on this policy have met the out-of-pocket limit. This means you may receive a bill for those members who have not met
+							the annual out-of-pocket limit.
+						</p>
+						<p class="legal">
+							#if($wo.defaultPolicy.isGroup)
+								The Summary of Benefits and Coverage is available free of charge for all group business.
+								<br /><br />
+							#end
+							#if($wo.defaultPolicy.isGroup && $wo.feature.pharmacy)
+								Benefits described are limited to those provided or administered by BCBSNC.  Your employer will provide information for any benefits administered by another vendor.
+								#if($wo.defaultPolicy.isState)
+
+									<!-- <span class="eightyTwentyMemberAddition"><br><br>"Applied to Out-of-Pocket Limit" includes amounts you have paid towards your deductibles, coinsurance and copayments. Coinsurance and copayments are combined in the table above. To view your coinsurance and copayments separately, go to your Claims Page. Expenses based on your responsibility. May not include claims received within the past 24 hours.</span> -->
+								#else
+								#end
+
+								<br /><br />
+							#end
+							<span class="crossOver hide"><b>
+								*NOTE: Both in-network and out-of-network expenses may have been applied to your or your family&#39;s in-network deductible and&#47;or coinsurance. For more details, view your
+								#parse( "members/secure/benefits/include_benefits_booklet.htm" )
+								.
+								</b><br /><br />
+							</span>
+							<span class="multipleMembers dependentView spouseView benefitsPolicySwitch hide">
+								Subscribers can see claims and benefits information for all the members on the policy.  A spouse or domestic partner can view claims and benefits usage for themselves and any dependents under age 18. Dependents can only view their own claims and benefits usage. Benefits usage totals may reflect benefits usage by all members on the policy, even if other member data is not displayed.
+								<br /><br />
+							</span>
+							<!-- !multiplier1 -->
+							<!--removing footnote as it is an old footnote and doesn't apply to most of current policies-->
+							<!--<span class="multipleMembers benefitsPolicySwitch hide">
+								<span class="benefits-policyBlueAdv benefitsPolicySwitch hide">
+									<span id="benefitsMultiplierPara">Please note <span class="benefitsFamilyMembersCount"></span>&nbsp;individuals on your BCBSNC health plan must fully meet their individual deductible before the family deductible is met. In some cases, out-of-pocket expenses will exceed the family deductible amount.</span>
+									<br /><br />
+								</span>
+							</span>-->
+							#if ($loggedInMember.getAttribute('GrandFatherFlag') == 'Y')
+								The out-of-pocket limit does not include copayments, deductibles, charges above the allowed amounts, or charges for non-covered services.
+								<span id="ooptxt">
+									#if ($loggedInMember.defaultPolicy.policyDto.companyNumber == '02')
+										Some self-funded groups may defined the out-of-pocket limit differently. For more information, please contact your plan administrator.
+									#end
+									<span class="eightyTwentyMemberAddition">Expenses based on your responsibility. May not include claims received within the past 24 hours. Out-of-network expenses may also have been applied to your in-network deductible and/or coinsurance totals.</span>
+								</span>
+							#else
+								<span class="benefits-policyCopay benefitsPolicySwitch eightyTwentyMember hide" id="hcpy" ng-show="!bcbsnc.thisMember.selectedPolicy.troop">
+									Expenses do not include copayments.
+								</span>
+								<span id="ooptxt_show_in_copay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)">"Applied to Out-of-Pocket Limit" includes amounts you have paid towards your deductibles, coinsurance and copayments.</span>
+								<span id="ooptxt_hide_in_copay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate < bcbsnc.schedule.troopEffectiveDate)">"Applied to Out-of-Pocket Limit" includes amounts you have paid toward your deductibles, coinsurance, and copayments. Coinsurance and copayments are combined in the table above. To view your coinsurance and copayments separately, go to your <a href="/members/secure/claims">Claims page</a>.</span>
+								<span class="eightyTwentyMemberAddition">Expenses based on your responsibility. May not include claims received within the past 24 hours.</span>
+								<span class="tieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan"><br /><br />Benefits are shown in three network-provider categories: In-Network (Tier 1), In-Network (Tier 2) and Out-of-Network. Benefits from Tier 1 can apply to Tier 2 and vice versa.</span>
+								<span class="BOtieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem"><br /><br />Benefits are shown in three network-provider categories: Preferred In-Network, Other In-Network and Out-of-Network. Benefits from Preferred In-Network can apply to Other In-Network and vice-versa.</span>
+								<span class="FacetsTieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan"><br /><br />Benefits are shown in three network-provider categories: Preferred Care, Standard Care and Out-of-Network. Benefits from Preferred In-Network can apply to Other In-Network and vice-versa.</span>
+								<span class="benefits-policyNoOON benefitsPolicySwitch hide eightyTwentyMemberAddition" id="OONcont">
+									Out-of-network expenses may also have been applied to your in-network deductible and/or coinsurance totals.
+								</span>
+							#end
+							<br /><br />
+							Benefit information is not a guarantee of payment for services. BCBSNC may adjust any of this information as new information is received or if it is determined that claims were processed incorrectly. Expense status is available for health policies only. It typically takes two weeks or longer from date of service for providers to submit a claim. Expense information is only available for claims that have been processed.
+						</p>
+						<p id="tier4Message" class="hide footnote vmargin25">&dagger;For specialty drugs, you will pay <span id='tier4Percent'></span> &nbsp;of the total cost, with a minimum charge of <span id='tier4Dollar'></span> &nbsp;and a maximum charge of $100.</p>
+
+					</div>
+		<!-- In Network: end -->
+
+		<!-- In Network - Tier 2: start -->
+					<div id="benefitsTier2TabContent" class="tabContent">
+						<div id="benefitsTier2TabContentDetail">
+							<div class="containleftcols" style="float:left;">
+								<h3>Expense Summary</h3>
+								<div class="col1">
+									<div id="benefitsTIER2">
+										<!-- This block of text was removed during QB#11178 -->
+										<p class="benefits-policyHSAHRA benefitsPolicySwitch tieredPlanOverrideTIER2 hide">
+											Expenses Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelAHSA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyIndividualTIER2 benefitsPolicySwitch tieredPlanOverrideTIER2 hide">
+											{{bcbsnc.thisMember.displayName}}'s Expenses Applied to <span class="benefitsTIER2LabelA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyIndividualFamilyBenefitsTIER2 benefitsPolicySwitch tieredPlanOverrideTIER2 hide">
+											Expenses Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyOther benefitsPolicySwitch tieredPlanOverrideTIER2 hide">
+											Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyTieredTIER2 benefitsPolicySwitch hide">
+											Amount remaining to meet
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelA">Out-of-Pocket Limit</span>
+										</p>
+
+										<h4 class="benefitsTIER2ValueMet"></h4>
+
+										<p class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelBHSA">Deductible</span>
+										</p>
+
+										<p class="benefits-policyIndividualTIER2 benefitsPolicySwitch hide">
+											<!--Individual-->Your <span class="benefitsTIER2LabelB">Deductible</span>
+										</p>
+
+										<p class="benefits-policyIndividualFamilyBenefitsTIER2 benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelB">Deductible</span>
+										</p>
+
+										<p class="benefits-policyOther benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											<span class="benefitsTIER2LabelB">Deductible</span>
+										</p>
+
+										<h4 class="benefitsTIER2Value"></h4>
+									</div>
+									<div id="benefitsTIER2MetCoinsurance" class="hide">
+										<span class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											<span class="benefits-policySingle benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s</span>
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Your family's</span>
+											<span class="benefits-TIER2FullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+										<span class="benefits-policyIndividualFamilyBenefitsTIER2 benefitsPolicySwitch hide">Your family's
+											<span class="benefits-TIER2FullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+										<span class="benefits-policyIndividualTIER2 benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s
+											<span class="benefits-TIER2FullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+										<span class="benefits-policyOther benefitsPolicySwitch hide">
+											<span class="benefits-policySingle benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s</span>
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Your family's</span>
+											<span class="benefits-TIER2FullCoverage"></span>
+											<span class="crossOver hide">*</span>
+										</span>
+									</div>
+								</div>
+								<div class="col2">
+									<p><a href="javascript:void(0);" onclick="openWhatsThisDialog();" class="underLink benefitsWhatsThisLink" ng-show="bcbsnc.thisMember.selectedPolicy.showWhatsThis">What's this?</a></p>
+									<span id="BenefitsTier2NetworkGraph"></span>
+								</div>
+								#if ($wo.feature.healthcareSummaryReport)
+								<p class="benefitBookletLinks benefitBookletLinksLeft">View annual health care expenses and savings:<br><a href="/members/secure/claims/summaryreport.htm">Health Care Summary Report</a></p>
+								#end
+							</div>
+							<div class="col3">
+								<h3>Benefits Summary</h3>
+								<div class="bgLightblue pad6 smallTextSize">
+									<!-- <div>
+										Subscriber ID: <span class="selectedPolicy">{{bcbsnc.thisMember.selectedPolicy.externalID}}</span></br>
+										<span class="bold">{{bcbsnc.thisMember.selectedPolicy.planName}}</span>
+									</div>-->
+									<div>
+										<span class="selectedPolicy right">{{bcbsnc.thisMember.selectedPolicy.externalID}}</span>
+										<span class="bold">{{bcbsnc.thisMember.selectedPolicy.lobName}}</span>
+									</div>
+									#if($wo.feature.manageHSA)
+										#if($wo.feature.fundVendor == 'HealthEquity')
+											<div ng-init="loadHEQHSABalance()">
+												<a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks && !bcbsnc.thisMember.selectedPolicy.heqHSABalances.hasError">Manage Your HSA</a>
+											</div>
+										#else
+											<a href="https://www.mybenefitwallet.com/" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks">Manage Your HSA</a>
+										#end
+									#end
+									#if($wo.feature.manageHRA)
+										#if ($date.difference($heqEffectiveDate, $dateFormat.format($loggedInMember.defaultPolicy.effectiveDate)).days >= 0)
+											#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).days > -90)
+												<li class="heq-sso-link"><a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank">Manage Your HRA</a></li>
+											#end
+										#else
+											#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).months > -6)
+												<li><a href="/members/secure/account/bcbsnc_redirect_consent.htm?SSO=HRA" target="_blank">Manage Your HRA</a></li>
+											#end
+										#end
+									#end
+								</div>
+								<div class="benefitsSummary" class="hmargin10 pad6">
+									<p class="benefitsCopay"></p>
+									<p class="benefitsDeductible"></p>
+									<p class="benefitsCoinsurance"></p>
+									<p class="benefitsRxDeductible"></p>
+									<p class="benefitsDrug"></p>
+								</div>
+								<!-- benefit booklet links -->
+								## QB10729
+								<p class='benefitBookletLinks' style="clear: right;">
+									<span ng-show="bcbsnc.thisMember.selectedPolicy.copayAfterDedPlan" style="font-size:11px;">*Copayments apply after your deductible has been met.</span>
+									<br><br>
+									#if ($wo.feature.benefitBooklet || $wo.feature.costEstimator)
+									For more information about your plan:<br>
+									#end
+									#if($wo.feature.benefitBooklet)
+										## parse("members/secure/benefits/include_policy_changes.htm")
+										#parse("members/secure/benefits/include_benefits_booklets.htm")
+										## #parse("members/secure/benefits/include_oarc.htm")
+										#set($benefitBookletLinkText = "View Your Benefit Booklet")
+										#parse("members/secure/benefits/include_benefits_booklet.htm")<br/>
+										#parse("members/secure/benefits/include_benefits_summary.htm")
+									#else
+										&nbsp;
+									#end
+
+									#if($wo.feature.costEstimator)
+									<span><a href="/members/secure/benefits/cost_estimator.htm">Treatment Cost Estimator</a></span>
+									#end
+								</p>
+								#if($wo.defaultPolicy.isGroup && $wo.defaultPolicy.ASO && !$wo.thisMember.bcbsncMember)
+								<p class="sbcLink hide sbcLinkMessage">
+									If you receive an error, we apologize. Please contact your Plan Administrator (your employer) or customer service for a copy of your SBC.
+								</p>
+								#end
+							</div>  <!-- end of col3 -->
+						</div>
+						<table class="benefitsExpenseDetailsTable" id="benefitsExpenseDetailsTableTIER2" summary="out of pocket expenses applied to deductible and co-insurance">
+							<thead>
+								<tr>
+									<td>&nbsp;</td>
+									<th>APPLIED TO<br /><span class="tooltip" id="TIER2Tooltip-Deductible">DEDUCTIBLE</span></th>
+									<th>AMOUNT REMAINING<br />TO MEET <span class="tooltip" id="TIER2Tooltip-Deductible2">DEDUCTIBLE<span class="crossOver hide">*</span></span></th>
+									<th class=""><span class="preACA"></span><span class="aptxt">APPLIED TO<br /></span><span class="tooltip" id="TIER2Tooltip-Coinsurance">COINSURANCE</span><!--(MAX)--><span class="copaymt"> PAID</span><span class="crossOver hide">*</span></th>
+									<!--th ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)"><span class="aptxt">APPLIED TO<br /></span><span class="tooltip" id="TIER2Tooltip-Copay">COPAYMENTS</span></th-->
+									<th>TOTAL <span class="tooltip" id="TIER2Tooltip-OOPExpenses">OUT-OF-POCKET<br />EXPENSES</span></th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr class="total">
+									<td>Total</td>
+									<td class="col2" id="totalTIER2Deductible"></td>
+									<td>&nbsp;</td>
+									<td class="col4" id="totalTIER2Coinsurance"></td>
+									<!--td class="col5" id="totalTIER2NCopay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)"></td-->
+									<td class="col5" id="totalTIER2Total"></td>
+								</tr>
+								<tr class="maximum">
+									<td>Maximum You Pay</td>
+									<td class="col2" id="maxTIER2Deductible"></td>
+									<td>&nbsp;</td>
+									<td class="col4" id="maxTIER2Coinsurance"></td>
+									<!--td class="col5" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)">&nbsp;</td-->
+									<td class="col5" id="maxTIER2OutOfPocket">&nbsp;</td>
+								</tr>
+							</tbody>
+						</table>
+						<!-- <p id="deductibleCheckMark" class="hmargin25 vmargin25 hide"><img src="/assets/members/public/images/orange-check.png" /> = Deductible has been met.</p> -->
+						<p class="legal">
+							#if($wo.defaultPolicy.isGroup && $wo.feature.pharmacy)
+								Benefits described are limited to those provided or administered by BCBSNC.  Your employer will provide information for any benefits administered by another vendor.
+
+								#if($wo.defaultPolicy.isState)
+
+									<!-- <span class="eightyTwentyMemberAddition"><br><br>"Applied to Out-of-Pocket Limit" includes amounts you have paid towards your deductibles, coinsurance and copayments. Coinsurance and copayments are combined in the table above. To view your coinsurance and copayments separately, go to your Claims Page. Expenses based on your responsibility. May not include claims received within the past 24 hours.</span> -->
+								#end
+
+								<br /><br />
+							#end
+							<span class="crossOver hide"><b>
+								*NOTE: Both in-network and out-of-network expenses may have been applied to your or your family&#39;s in-network deductible and&#47;or coinsurance. For more details, view your
+								#parse( "members/secure/benefits/include_benefits_booklet.htm" )
+								.
+								</b><br /><br />
+							</span>
+							<span class="multipleMembers dependentView spouseView benefitsPolicySwitch hide">
+								Subscribers can see claims and benefits information for all the members on the policy.  A spouse or domestic partner can view claims and benefits usage for themselves and any dependents under age 18. Dependents can only view their own claims and benefits usage. Benefits usage totals may reflect benefits usage by all members on the policy, even if other member data is not displayed.
+								<br /><br />
+							</span>
+	<!-- !multiplier1 -->
+							<!--removing footnote as it is an old footnote and doesn't apply to most of current policies-->
+							<!--<span class="multipleMembers benefitsPolicySwitch hide">
+                                <span class="benefits-policyBlueAdv benefitsPolicySwitch hide">
+                                    <span id="benefitsMultiplierPara">Please note <span class="benefitsFamilyMembersCount"></span>&nbsp;individuals on your BCBSNC health plan must fully meet their individual deductible before the family deductible is met. In some cases, out-of-pocket expenses will exceed the family deductible amount.</span>
+                                    <br /><br />
+                                </span>
+                            </span>-->
+							#if ($loggedInMember.getAttribute('GrandFatherFlag') == 'Y')
+								The out-of-pocket limit does not include copayments, deductibles, charges above the allowed amounts, or charges for non-covered services.
+								<span id="ooptxt_tier2">
+									#if ($loggedInMember.defaultPolicy.policyDto.companyNumber == '02')
+										Some self-funded groups may defined the out-of-pocket limit differently. For more information, please contact your plan administrator.
+									#end
+									<span class="eightyTwentyMemberAddition">Expenses based on your responsibility. May not include claims received within the past 24 hours. Out-of-network expenses may also have been applied to your in-network deductible and/or coinsurance totals.</span>
+								</span>
+							#else
+								<span class="benefits-policyCopay benefitsPolicySwitch eightyTwentyMember hide" id="hcpy" ng-show="!bcbsnc.thisMember.selectedPolicy.troop">
+									Expenses do not include copayments.
+								</span>
+								<span id="ooptxt_show_tier2_copay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)">"Applied to Out-of-Pocket Limit" includes amounts you have paid towards your deductibles, coinsurance and copayments.</span>
+								<!-- <span id="ooptxt_hide_tier2_copay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate < bcbsnc.schedule.troopEffectiveDate)">"Applied to Out-of-Pocket Limit" includes amounts you have paid toward your deductibles, coinsurance, and copayments. Coinsurance and copayments are combined in the table above. To view your coinsurance and copayments separately, go to your <a href="/members/secure/claims">Claims page</a>.</span> -->
+								<span class="eightyTwentyMemberAddition">Expenses based on your responsibility. May not include claims received within the past 24 hours.</span>
+								<span class="tieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan"><br /><br />Benefits are shown in three network-provider categories: In-Network (Tier 1), In-Network (Tier 2) and Out-of-Network. Benefits from Tier 1 can apply to Tier 2 and vice versa.</span>
+								<span class="BOtieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem"><br /><br />Benefits are shown in three network-provider categories: Preferred In-Network, Other In-Network and Out-of-Network. Benefits from Preferred In-Network can apply to Other In-Network and vice-versa.</span>
+								<span class="FacetsTieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan"><br /><br />Benefits are shown in three network-provider categories: Preferred Care, Standard Care and Out-of-Network. Benefits from Preferred In-Network can apply to Other In-Network and vice-versa.</span>
+								<span class="benefits-policyNoOON benefitsPolicySwitch hide" id="OONcont">
+									<span class="eightyTwentyMemberAddition">Out-of-network expenses may also have been applied to your in-network deductible and/or coinsurance totals.</span>
+								</span>
+							#end
+							<br /><br />
+							Benefit information is not a guarantee of payment for services. BCBSNC may adjust any of this information as new information is received or if it is determined that claims were processed incorrectly. Expense status is available for health policies only. It typically takes two weeks or longer from date of service for providers to submit a claim. Expense information is only available for claims that have been processed.
+						</p>
+						<p id="tier4Message" class="hide footnote vmargin25">&dagger;For specialty drugs, you will pay <span id='tier4Percent'></span> &nbsp;of the total cost, with a minimum charge of <span id='tier4Dollar'></span> &nbsp;and a maximum charge of $100.</p>
+
+					</div>
+		<!-- In Network - Tier 2: end -->
+
+		<!-- Out-of-Network -->
+					<div id="benefitsOutOfNetworkTabContent" class="tabContent">
+						<div id="benefitsOutOfNetworkTabContentDetail">
+							<div class="containleftcols" style="float: left;">
+							    <h3>Expense Summary</h3>
+								<div class="col1">
+									<div id="benefitsOON">
+										<p id="benefitsOONPolicyExpenses" class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											Expenses Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span> Out-of-Network
+											<span class="benefitsOONLabelAHSA">Deductible</span>
+										</p>
+										<p id="benefitsOONPolicyExpenses" class="benefits-policyIndividualOON benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s Expenses Applied to Out-of-Network <span class="benefitsOONLabelA">Deductible</span></p>
+										<p id="benefitsOONPolicyExpenses" class="benefits-policyIndividualFamilyBenefitsOON benefitsPolicySwitch hide">
+											Expenses Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											Out-of-Network
+											<span class="benefitsOONLabelA">Deductible</span>
+										</p>
+										<p id="benefitsOONPolicyExpenses" class="benefits-policyOther benefitsPolicySwitch hide">
+											Applied to
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											Out-of-Network
+											<span class="benefitsOONLabelA">Deductible</span>
+										</p>
+										<h4 class="benefitsOONValueMet"></h4>
+
+										<p id="benefitsOONPolicyMax" class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											Out-of-Network
+										<span class="benefitsOONLabelBHSA">Deductible</span>
+										</p>
+										<p id="benefitsOONPolicyMax" class="benefits-policyIndividualOON benefitsPolicySwitch hide">
+											Individual Out-of-Network
+											<span class="benefitsOONLabelB">Deductible</span>
+										</p>
+										<p id="benefitsOONPolicyMax" class="benefits-policyIndividualFamilyBenefitsOON benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											Out-of-Network
+											<span class="benefitsOONLabelB">Deductible</span>
+										</p>
+										<p id="benefitsOONPolicyMax" class="benefits-policyOther benefitsPolicySwitch hide">
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Family</span>
+											<span class="benefits-policySingle benefitsPolicySwitch hide">Your</span>
+											Out-of-Network
+											<span class="benefitsOONLabelB">Deductible</span>
+										</p>
+										<h4 class="benefitsOONValue"></h4>
+									</div>
+									<div id="benefitsOONMetCoinsurance" class="hide">
+										<span class="benefits-policyHSAHRA benefitsPolicySwitch hide">
+											<span class="benefits-policySingle benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s</span>
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Your family's</span>
+											<span class="benefits-OONFullCoverage"></span>
+										</span>
+										<span class="benefits-policyIndividualFamilyBenefitsOON benefitsPolicySwitch hide">
+											Your <span class="benefits-policyFamily benefitsPolicySwitch hide">family's</span>
+											<span class="benefits-OONFullCoverage"></span>
+										</span>
+										<span class="benefits-policyIndividualOON benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s
+											<span class="benefits-OONFullCoverage"></span>
+										</span>
+										<span class="benefits-policyOther benefitsPolicySwitch hide">
+											<span class="benefits-policySingle benefitsPolicySwitch hide">{{bcbsnc.thisMember.displayName}}'s</span>
+											<span class="benefits-policyFamily benefitsPolicySwitch hide">Your family's</span>
+											<span class="benefits-OONFullCoverage"></span>
+										</span>
+									</div>
+								</div>
+								<div class="col2">
+									<p><a href="javascript:void(0);" onclick="openWhatsThisDialog();" class="underLink benefitsWhatsThisLink" ng-show="bcbsnc.thisMember.selectedPolicy.showWhatsThis">What's this?</a></p>
+									<span id="BenefitsOutOfNetworkGraph"></span>
+								</div>
+							</div>
+							<div class="col3">
+							    <h3>Benefits Summary</h3>
+								<div class="bgLightblue pad6 smallTextSize">
+									<div>
+										<span class="selectedPolicy right">{{bcbsnc.thisMember.selectedPolicy.externalID}}</span>
+										<span class="bold">{{bcbsnc.thisMember.selectedPolicy.lobName}}</span>
+									</div>
+									#if($wo.feature.manageHSA)
+										#if($wo.feature.fundVendor == 'HealthEquity')
+											<a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks && !bcbsnc.thisMember.selectedPolicy.heqHSABalances.hasError">Manage Your HSA</a>
+										#else
+											<a href="https://www.mybenefitwallet.com/" target="_blank" ng-show="bcbsnc.thisMember.selectedPolicy.activeHSALinks">Manage Your HSA</a>
+										#end
+									#end
+									#if($wo.feature.manageHRA)
+										#if ($date.difference($heqEffectiveDate, $dateFormat.format($loggedInMember.defaultPolicy.effectiveDate)).days >= 0)
+											#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).days > -90)
+												<li class="heq-sso-link"><a class="heqSSOlink" href="https://${producerEnv}.bcbsnc.com/FIM/sps/HeqFed/saml20/logininitial?RequestBinding=HTTPPost&NameIdFormat=Email&PartnerId=https://${heqEnv}.HealthEquity.com/HESaml2.aspx" onclick="trackSso('SSO_HEALTH_EQUITY_ACCOUNT', 'https://${heqEnv}.HealthEquity.com/HESaml2.aspx')" target="_blank">Manage Your HRA</a></li>
+											#end
+										#else
+											#if ($date.whenIs($dateFormat.format($loggedInMember.defaultPolicy.expirationDate)).months > -6)
+												<li><a href="/members/secure/account/bcbsnc_redirect_consent.htm?SSO=HRA" target="_blank">Manage Your HRA</a></li>
+											#end
+										#end
+									#end
+								</div>
+								<div class="benefitsSummary" class="hmargin10 pad6">
+									<p class="benefitsCopay"></p>
+									<p class="benefitsDeductible"></p>
+									<p class="benefitsCoinsurance"></p>
+									<p class="benefitsRxDeductible"></p>
+									<p class="benefitsDrug"></p>
+								</div>
+									<!-- benefit booklet links -->
+								<p class='benefitBookletLinks' style="clear: right;">
+								    #if ($wo.feature.benefitBooklet || $wo.feature.costEstimator)
+                    For more information about your plan:<br>
+                    #end
+                    #if($wo.feature.benefitBooklet)
+										#parse("members/secure/benefits/include_policy_changes.htm")
+										#parse("members/secure/benefits/include_benefits_booklets.htm")
+										## #parse("members/secure/benefits/include_oarc.htm")
+										#set($benefitBookletLinkText = "View Your Benefit Booklet")
+										#parse("members/secure/benefits/include_benefits_booklet.htm")<br/>
+                    #parse("members/secure/benefits/include_benefits_summary.htm")
+                    #else
+                        &nbsp;
+                    #end
+								</p>
+								#if($wo.defaultPolicy.isGroup && $wo.defaultPolicy.ASO && !$wo.thisMember.bcbsncMember)
+								<p class="sbcLink hide sbcLinkMessage">
+									If you receive an error, we apologize. Please contact your Plan Administrator (your employer) or customer service for a copy of your SBC.
+								</p>
+								#end
+							</div>
+						</div>
+						<table class="benefitsExpenseDetailsTable" id="benefitsExpenseDetailsTableOON" summary="out of pocket expenses applied to deductible and co-insurance">
+							<thead>
+								<tr>
+									<td>&nbsp;</td>
+									<th>APPLIED TO<br /><span class="tooltip" id="OONTooltip-Deductible">DEDUCTIBLE</span></th>
+									<th>AMOUNT REMAINING<br />TO MEET <span class="tooltip" id="OONTooltip-Deductible2">DEDUCTIBLE</span></th>
+									<th class=""><span class="preACA"></span><span class="aptxt">APPLIED TO<br /></span><span class="tooltip" id="OONTooltip-Coinsurance">COINSURANCE</span><!-- (MAX) --><span class="copaymt"> PAID</span></th>
+									<!--th ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)"><span class="aptxt">APPLIED TO<br /></span><span class="tooltip" id="OONTooltip-Copay">COPAYMENTS</span></th-->
+									<th>TOTAL <span class="tooltip" id="OONTooltip-OOPExpenses">OUT-OF-POCKET<br />EXPENSES</span></th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr class="total">
+									<td>Total</td>
+									<td class="col2" id="totalOONDeductible"></td>
+									<td>&nbsp;</td>
+									<td class="col4" id="totalOONCoinsurance"></td>
+									<!--td class="col5" id="totalOONCopay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)"></td-->
+									<td class="col5" id="totalOONTotal"></td>
+								</tr>
+								<tr class="maximum">
+									<td>Maximum You Pay</td>
+									<td class="col2" id="maxOONDeductible"></td>
+									<td>&nbsp;</td>
+									<td class="col4" id="maxOONCoinsurance"></td>
+									<!--td class="col5" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)">&nbsp;</td-->
+									<td class="col5" id="maxOONOutOfPocket">&nbsp;</td>
+								</tr>
+							</tbody>
+						</table>
+						<!-- <p class="hmargin25 vmargin25"><img src="/assets/members/public/images/orange-check.png" /> = Deductible has been met.</p> -->
+						<p id="aggregateHSA-OON-OOP-Msg" class="hide">
+							One or more members on this policy have met the out-of-pocket limit. This means you may receive a bill for those members who have not met
+							the annual out-of-pocket limit.
+						</p>
+						<p class="legal">
+							<span class="multipleMembers dependentView spouseView benefitsPolicySwitch hide">
+								Subscribers can see claims and benefits information for all the members on the policy.  A spouse or domestic partner can view claims and benefits usage for themselves and any dependents under age 18. Dependents can only view their own claims and benefits usage. Benefits usage totals may reflect benefits usage by all members on the policy, even if other member data is not displayed.
+								<br /><br />
+							</span>
+							<!--removing footnote as it is an old footnote and doesn't apply to most of current policies-->
+							<!--<span class="multipleMembers benefitsPolicySwitch hide">
+                                <span class="benefits-policyBlueAdv benefitsPolicySwitch hide">
+                                    <span id="benefitsMultiplierPara">Please note <span class="benefitsFamilyMembersCount"></span>&nbsp;individuals on your BCBSNC health plan must fully meet their individual deductible before the family deductible is met. In some cases, out-of-pocket expenses will exceed the family deductible amount.</span>
+                                    <br /><br />
+                                </span>
+                            </span>-->
+							<span class="benefits-policyCopay benefitsPolicySwitch hide" id="hcpy">
+								#if ($loggedInMember.getAttribute('GrandFatherFlag') == 'Y')
+									The out-of-pocket limit does not include copayments, deductibles, charges above the allowed amounts, or charges for non-covered services.
+									#if ($loggedInMember.defaultPolicy.policyDto.companyNumber == '02')
+										Some self-funded groups may define the out-of-pocket limit differently. For more information, please contact your plan administrator.
+									#end
+								#else
+								Expenses do not include copayments.
+								#end
+							</span>
+							<span id="ooptxt_show_oon_copay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate >= bcbsnc.schedule.troopEffectiveDate)">"Applied to Out-of-Pocket Limit" includes amounts you have paid towards your deductibles, coinsurance and copayments.</span>
+							<!-- <span id="ooptxt_hide_oon_copay" ng-show="bcbsnc.thisMember.selectedPolicy.troop && (bcbsnc.thisMember.selectedPolicy.effectiveDate < bcbsnc.schedule.troopEffectiveDate)">"Applied to Out-of-Pocket Limit" includes amounts you have paid toward your deductibles, coinsurance, and copayments. Coinsurance and copayments are combined in the table above. To view your coinsurance and copayments separately, go to your <a href="/members/secure/claims">Claims page</a>.</span> -->
+								<span class="eightyTwentyMemberAddition">Expenses based on your responsibility. May not include claims received within the past 24 hours.</span>
+							<span class="tieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan"><br /><br />Benefits are shown in three network-provider categories: In-Network (Tier 1), In-Network (Tier 2) and Out-of-Network. Benefits from Tier 1 can apply to Tier 2 and vice versa.</span>
+							<span class="BOtieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem"><br /><br />Benefits are shown in three network-provider categories: Preferred In-Network, Other In-Network and Out-of-Network. Benefits from Preferred In-Network can apply to Other In-Network and vice-versa.</span>
+							<span class="FacetsTieredPlanFootnote" ng-show="bcbsnc.thisMember.selectedPolicy.isFacetsTieredPlan"><br /><br />Benefits are shown in three network-provider categories: Preferred Care, Standard Care and Out-of-Network. Benefits from Preferred In-Network can apply to Other In-Network and vice-versa.</span>
+							<span class="benefits-policyNoOON benefitsPolicySwitch hide" id="OONcont">
+<!--								Out-of-network expenses also count toward your in-network coinsurance totals.  -->
+								<span class="eightyTwentyMemberAddition">Out-of-network expenses may also have been applied to your in-network deductible and/or coinsurance totals.</span>
+							</span>
+							<br /><br />
+							Benefit information is not a guarantee of payment for services. BCBSNC may adjust any of this information as new information is received or if it is determined that claims were processed incorrectly. Expense status is available for health policies only. It typically takes two weeks or longer from date of service for providers to submit a claim. Expense information is only available for claims that have been processed.
+						</p>
+					</div>
+		<!-- Prescriptions -->
+					<div id="benefitsPrescriptionsTabContent" class="tabContent">
+						<div class="prescriptionsContent">
+							<h3>Summary of prescription expenses</h3>
+							<p>You have a prescription deductible of:
+							<h4 class="amount green rxDeductible"></h4>
+							<p>You have a benefit maximum of:</p>
+							<h4 class="amount blue rxBenefitMax"></h4>
+						</div>
+						<div class="prescriptionsContent">
+							<p><a href="/members/secure/claims/?tab=prescription" class="vmargin10">View Prescriptions Claims</a></p>
+							<p>
+								There is a <span class="rxBenefitMax"></span> benefit maximum per member per benefit period for brand name drugs.
+								Brand drugs with an approved amount over $500 per 30-day supply do not apply to the benefit maximum.
+								Generic drugs have no benefit period maximums.
+							</p>
+						</div>
+						<p class="legal clear">Benefit information is not a guarantee of payment for services. BCBSNC may adjust any of this information as new information is received or if it is determined that claims were processed incorrectly. Expense status is available for health policies only. It typically takes two weeks or longer from date of service for providers to submit a claim. Expense information is only available for claims that have been processed.</p>
+					</div>
+					<div id="benefitsCOnlyTabContent" class="tabContent">
+						<p>Your contraceptives-only plan reimburses for federally-mandated women's contraceptive services.  These services are reimbursed at 100% if received from an in-network provider. </p>
+
+						<p>Covered services include:
+							<ul>
+							<li>Education and counseling related to contraceptives and sterilization</li>
+							<li>Certain sterilization procedures</li>
+							<li>The insertion or removal of, as well as any medically necessary examinations associated with the use of, intrauterine devices, diaphragms, injectable contraceptives and implanted hormonal contraceptives</li>
+							<li>Contraceptive drugs and devices when coverage is mandated by federal law (prescription required)</li>
+							</ul>
+						</p>
+
+						<p>The following conditions must be met for these services to be reimbursed:
+							<ul>
+								<li>Services are designated as women's contraceptive services under federal law. (See <a href="http://www.bcbsnc.com/preventive">bcbsnc.com/preventive</a> for up-to-date information.)</li>
+								<li>Services are performed by an in-network provider, unless otherwise specified.</li>
+								<li>Services are provided in an office-based, outpatient or ambulatory setting or urgent care center.  (Note: Tubal ligations may be reimbursed when performed inpatient.)</li>
+							</ul>
+						</p>
+
+						<p>No reimbursement will be provided for out-of-network contraceptive services, with the exception of contraceptive drugs and devices.  If you receive contraceptive drugs and devices from an out-of-network pharmacy, you may be required to pay for charges over the allowed amount, the difference between the allowed amount and the billed charge.</p>
+						<br />
+						<p><a href="/assets/members/public/pdf/ContraceptiveOnlyBooklet.pdf" target="_blank">View Your Benefit Booklet</a> (pdf)</p>
+						<br /><br /><br /><br />
+
+
+                    </div>
+			#set ($parm = $request.getParameter("tb"))
+                     #if($wo.defaultPolicy.groupNumber == '069114')
+
+                         <div class="footnote vmargin25" style="padding: 0 10px;">
+                            <p>The Blue Rewards program is only available for City of Durham employees and dependents covered under a PPO Core or Basic plan.</p>
+                            <p>BCBSNC and the City of Durham reserve the right to change or discontinue Blue Rewards at any time, including changing point values and available rewards, without prior notification. Points are only available for use during the plan year in which they are awarded and do not roll over from year-to-year. Once you have met the Plan's out-of-pocket limit for the plan year, you are no longer eligible to earn Blue Rewards points. Decisions regarding medical care should be made with the advice of a doctor. Receipt of rewards may have tax implications. Consult your tax advisor with any questions.</p>
+                            <p>BLUE CROSS<sup>&reg;</sup>, BLUE SHIELD<sup>&reg;</sup> and the Cross and Shield symbols are marks of the Blue Cross and Blue Shield Association, an association of independent Blue Cross and Blue Shield Plans. <sup>&reg;1</sup>, SM1 Mark of Blue Cross and Blue Shield of North Carolina. All other marks and trade names are the property of their respective owners. Blue Cross and Blue Shield of North Carolina is an independent licensee of the Blue Cross and Blue Shield Association. 8/15.</p>
+                        </div>
+ 						#end
+
+				</div>
+				</div>
+				## #end
+			</div>
+			#parse("members/secure/benefits/whatsThisDialog.htm")
+
+		#end
+	#end
+
+#parse("members/secure/includes/benefitBookletTextDialog.htm")
+	<div class="hide" id="tooltipContent-TIERED-OOP-NOTE"><span ng-show="bcbsnc.thisMember.selectedPolicy.isTieredPlan">Note: Benefits from Tier 1 can apply to Tier 2, and vice versa.</span><span ng-show="bcbsnc.thisMember.selectedPolicy.isBOTieredPlanMem">Note: Benefits from Preferred In-Network can apply to Other In-Network, and vice versa.</span></div>
+	<div class="hide" id="tooltipContent-INTooltip-OOPExpenses">The amount you have paid that was applied to your deductible and coinsurance per benefit period. Doesn't include copayments (if any).</div>
+	<div class="hide" id="tooltipContent-INTooltip-Coinsurance">The amount you have paid for medical expenses that were covered by your coinsurance benefit. <span class="eightyTwentyMemberAddition">These totals do not reflect Rx (prescription) copayments and coinsurance; however, they do include Rx deductibles.</span> </div>
+	<div class="hide" id="tooltipContent-INTooltip-Copay">The amount of copayments you have paid for medical expenses.</div>
+	<div class="hide" id="tooltipContent-INTooltip-Deductible">Your deductible is the dollar amount you pay each year for covered <span class="eightyTwentyMemberAddition">medical</span> services before Blue Cross NC begins paying toward those <span class="eightyTwentyMemberAddition">medical</span> services.   The deductible doesn't include coinsurance, charges in excess of the allowed amount, amounts exceeding any maximum, or expenses for noncovered services.</div>
+	<div class="hide" id="tooltipContent-INTooltip-Deductible2">Your deductible is the dollar amount you pay each year for covered <span class="eightyTwentyMemberAddition">medical</span> services before Blue Cross NC begins paying toward those <span class="eightyTwentyMemberAddition">medical</span> services.   The deductible doesn't include coinsurance, charges in excess of the allowed amount, amounts exceeding any maximum, or expenses for noncovered services.</div>
+	<div class="hide" id="tooltipContent-TIER2Tooltip-OOPExpenses">The amount you have paid that was applied to your deductible and coinsurance per benefit period. Doesn't include copayments (if any).</div>
+	<div class="hide" id="tooltipContent-TIER2Tooltip-Coinsurance">The amount you have paid for medical expenses that were covered by your coinsurance benefit. <span class="eightyTwentyMemberAddition">These totals do not reflect Rx (prescription) copayments and coinsurance; however, they do include Rx deductibles.</span> </div>
+	<div class="hide" id="tooltipContent-TIER2Tooltip-Copay">The amount of copayments you have paid for medical expenses.</div>
+	<div class="hide" id="tooltipContent-TIER2Tooltip-Deductible">Your deductible is the dollar amount you pay each year for covered <span class="eightyTwentyMemberAddition">medical</span> services before Blue Cross NC begins paying toward those <span class="eightyTwentyMemberAddition">medical</span> services.   The deductible doesn't include coinsurance, charges in excess of the allowed amount, amounts exceeding any maximum, or expenses for noncovered services.</div>
+	<div class="hide" id="tooltipContent-TIER2Tooltip-Deductible2">Your deductible is the dollar amount you pay each year for covered <span class="eightyTwentyMemberAddition">medical</span> services before Blue Cross NC begins paying toward those <span class="eightyTwentyMemberAddition">medical</span> services.   The deductible doesn't include coinsurance, charges in excess of the allowed amount, amounts exceeding any maximum, or expenses for noncovered services.</div>
+	<div class="hide" id="tooltipContent-OONTooltip-OOPExpenses">The amount you have paid that was applied to your deductible and coinsurance per benefit period. Doesn't include copayments (if any).</div>
+	<div class="hide" id="tooltipContent-OONTooltip-Coinsurance">The amount you have paid for medical expenses that were covered by your coinsurance benefit. <span class="eightyTwentyMemberAddition">These totals do not reflect Rx (prescription) copayments and coinsurance; however, they do include Rx deductibles.</span> </div>
+	<div class="hide" id="tooltipContent-OONTooltip-Copay">The amount of copayments you have paid for medical expenses.</div>
+	<div class="hide" id="tooltipContent-OONTooltip-Deductible">Your deductible is the dollar amount you pay each year for covered <span class="eightyTwentyMemberAddition">medical</span> services before Blue Cross NC begins paying toward those <span class="eightyTwentyMemberAddition">medical</span> services.   The deductible doesn't include coinsurance, charges in excess of the allowed amount, amounts exceeding any maximum, or expenses for noncovered services.</div>
+	<div class="hide" id="tooltipContent-OONTooltip-Deductible2">Your deductible is the dollar amount you pay each year for covered <span class="eightyTwentyMemberAddition">medical</span> services before Blue Cross NC begins paying toward those <span class="eightyTwentyMemberAddition">medical</span> services.   The deductible doesn't include coinsurance, charges in excess of the allowed amount, amounts exceeding any maximum, or expenses for noncovered services.</div>
+
+	<script src="/assets/members/public/data-capture/blueconnect-data-capture-jquery.min.js"></script>
+	<script src="/assets/members/public/data-capture/manual-sso-tracking.js"></script>
+	<script>
+		(function() {
+			jQuery.fn.dataCapture.track('BENEFIT_OVERVIEW_IN_NETWORK', {selectedPolicyIndex: bcbsnc.thisMember.selectedPolicy.index});
+
+			jQuery('#benefitsPolicySelect').change(function(event) {
+				jQuery.fn.dataCapture.track('BENEFIT_OVERVIEW_IN_NETWORK', {selectedPolicyIndex: jQuery('#benefitsPolicySelect').val().split('policy').join('')});
+			});
+		}());
+	</script>
+	<script>
+		// Get the modal
+		var modal = document.getElementById('accessOneModal');
+
+		// Get the button that opens the modal
+		var modalOpenBtn = document.getElementById('modalOpenBtn');
+
+		// Get the <span> element that closes the modal
+		var closeBtn = document.getElementById('accessOneModalCloseBtn');
+
+		// When the user hovers the button, open the modal 
+		modalOpenBtn.onhover = function() {
+			modal.style.display = "block";
+		}
+
+		// When the user clicks on <span> (x), close the modal
+		closeBtn.onclick = function() {
+			modal.style.display = "none";
+		}
+
+		// When the user clicks anywhere outside of the modal, close it
+		window.onclick = function(event) {
+			if (event.target == modal) {
+				modal.style.display = "none";
+			}
+		}
+	</script>
+	<style>
+		#modalOpenBtn {
+			width: 10px;
+			height: 10px;
+			display: inline-block;
+			position: absolute;
+			left: 5px;
+			top: 100px;
+			background-color: #4A7637;
+		}
+		/* The Modal (background) */
+		.access-one-modal {
+			display: none;
+			position: fixed; 
+			z-index: 100; 
+			padding-top: 100px; 
+			left: 0;
+			top: 0;
+			width: 40%; 
+			height: 100%; 
+			overflow: auto; 
+			background-color: rgb(0,0,0);
+			background-color: rgba(0,0,0,0.4); 
+		}
+
+		/* Modal Content */
+		.access-one-modal-content {
+			background-color: #fefefe;
+			margin: auto;
+			padding: 20px;
+			border: 1px solid #888;
+			width: 80%;
+		}
+
+		/* The Close Button */
+		.access-one-modal-close {
+			color: #aaaaaa;
+			float: right;
+			font-size: 20px;
+			cursor: pointer;
+		}
+
+		.access-one-logo {
+			float: left;
+			height: 50px;
+			width: 130px;
+		}
+
+		.learn-more-btn {
+			background: white;
+			border: 1px solid #03a9f4;
+			width: 80%;
+			margin: auto;
+			height: 30px;
+		}
+	</style>
+
+	#parse( "members/secure/navigation.htm")
+	#parse( "members/secure/includes/benefits-templates.htm")
+	#parse( "members/secure/footer.htm" )

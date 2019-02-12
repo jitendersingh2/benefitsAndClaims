@@ -1,0 +1,430 @@
+#set( $header = "claims" )
+#set( $onload = "claims" )
+#set( $navigation = 3 )
+#set( $footer = "secure" )
+#set ($claimsPage = true)
+#parse( "members/secure/header.htm" )
+
+#if(!$wo.feature.claims)
+	#parse( "members/secure/no-access.htm")
+#end
+
+#if($wo.defaultPolicy.isIndividual || ($wo.defaultPolicy.isDental && $wo.defaultPolicy.isGroup))
+	#set( $dentalClaimForm = "j400_ind_1007_1.pdf")
+#else ##if ( $wo.defaultPolicy.isGroup ) should always be true
+	#set( $dentalClaimForm = "dental_claim_form_group.pdf")
+#end
+
+<!-- Modal Open Colored Box -->
+<div id="modalOpenBtn"></div>
+
+<!-- The Modal -->
+<div id="accessOneModal" class="access-one-modal">
+	<!-- Modal content -->
+	<div class="access-one-modal-content">
+		<span id="accessOneModalCloseBtn" class="access-one-modal-close">&times;</span>
+		<img
+			src="/assets/members/public/images/AccessOneLogo.png"
+			class="access-one-logo"
+		>
+		<p>AccessOne has partnered with selected hospitals to provide patient friendly financing.
+			They offer no-interest and flexible low-interest payment plans that are tailored to
+			your financial situation. Their customized payment options are made to help, not hurt:
+		</p>
+		<ul>
+			<li>No credit reporting</li>
+			<li>Everyone is accepted, 100% voluntary enrollment</li>
+			<li>No hidden fees</li>
+			<li>Easy payment methods: online, phone, check , auto pay</li>
+			<li>Combined Statements that include other medical bills and family members</li>
+		</ul> <br>
+		<a style="text-decoration: none;" target="_blank" href="https://www.accessonemedcard.com/"><button class="learn-more-btn">Learn More</button></a>
+	</div>
+</div>
+
+<div id="main-content" class="content-header">
+	<h1>Claims</h1>
+</div>
+<div  class="pageContent pageContentClaims" style="min-height:500px;">
+	<!-- System Error Message & info message Section
+		instructions:	system outage messages should be placed in members/public/outage-message-body.htm
+				and they will be automatically included on the page-->
+	#parse("members/public/outage-message-body.htm")
+	<!-- End System Error Message Section -->
+
+		<div id="claimsTabLoader">
+			<h5 class="blue claimsContent">Loading Your Claims</h5>
+			<h5 class="green rxClaimsContent hide">Loading Your Prescription Claims</h5>
+			<img src="/assets/members/public/images/loading.gif" />
+		</div>
+		<div class="tabContainer" id="claimsTabContainer">
+			<ul class="memberTabs">
+				#if($wo.anyPolicy.hasClaims)
+					#set($medicalCssClass = '')
+				#else
+					#set($medicalCssClass = 'hide')
+				#end
+				<li class="activeTab $medicalCssClass" id="claimsTab" ng-init="bcbsnc.page.activeTab = 'claimsTab'">
+					Medical
+				</li>
+
+				#if($wo.feature.prescriptions || ($wo.defaultPolicy.isState && $wo.thisMember.age > 17))
+				<li class="inactiveTab" id="claimsRxTab">
+					#if($wo.defaultPolicy.isState)
+						Pharmacy
+					#else
+						Prescriptions
+					#end
+				</li>
+				#end
+			</ul>
+			#if($wo.anyPolicy.hasClaims)
+			<div class="tabContent" id="claimsTabContent">
+				<div class="right tabContentHeadRight">
+
+					<!--<a href="/assets/members/public/pdf/understanding-what-you-owe.pdf" class="underLink" target="_Blank">Understanding What You Owe</a><span class="iconPDF">&nbsp;</span>-->
+				</div>
+				<div class="claimsContentWrapper">
+					<div class="tabContentHead">
+						<h5 class="green claimsContent">Search Medical Claims</h5>
+						<h5 class="green rxClaimsContent hide">Search for Prescription Claims</h5>
+					</div>
+					<div id="claimsTabAppContainer">
+						<div id="claimsTabDetailContent">
+							<div id="claimsPolicy" class="left">
+								#parse( "members/secure/includes/claims-policySelect.htm" )
+							</div>
+							<div class="left" id="claimNo">
+								<p class="claimsContent"><label for="claimNumber">Claim Number</label></p>
+								<p class="rxClaimsContent hide"><label for="claimNumber">Rx Claim Number</label></p>
+								<input type="text" size="10" id="claimNumber" name="claimNumber" class="claimsInput"  title="Claim Number" ng-model="bcbsnc.page.searchClaimNumber" />
+							</div>
+							<br clear="all" />
+							<div class="left" id="claimsMember">
+								<p><label for="memberSelect">Member</label></p>
+								<img id="claimsLoading" src="/assets/members/public/images/loading.gif" />
+								#parse( "members/secure/includes/memberSelect.htm" )
+							</div>
+							<div class="left" id="claimsType">
+								<p ng-show="bcbsnc.page.activeTab == 'claimsRxTab'">Prescription Type</p>
+
+								<select class="serviceType hide" name="rxServiceType" id="rxServiceType" ng-model="bcbsnc.page.selectedRxServiceType" ng-init="bcbsnc.page.selectedRxServiceType = 'ALL'">
+									<option value="ALL" selected="selected">ALL</option>
+									<option value="Prescription Drugs">Prescription Drugs</option>
+									<option value="Prescription Drugs - Brand">Prescription Drugs - Brand</option>
+									<option value="Prescription Drugs - Generic">Prescription Drugs - Generic</option>
+								</select>
+
+
+							</div>
+							<br clear="all" />
+							<div class="left" id="claimsDatesOfService">
+								<p>Dates of Service</p>
+								<fieldset id="datesOfService">
+									<label for="valueA" class="hide">From:</label>
+									<select name="valueA" id="valueA"><option value=""></option></select>
+									<label for="valueB" class="hide">To:</label>
+									<select name="valueB" id="valueB"><option value=""></option></select>
+									<br clear="all" />
+								</fieldset>
+							</div>
+							<div class="left" style="float:left;margin-top:28px;">
+								<input type="button" class="buttongreen rxClaimsContent searchRxClaims hide" value="Search" />
+								<input type="button" class="buttongreen claimsContent searchClaims" value="Search" />
+
+							</div>
+							<br clear="all" />
+						</div>
+						<div class="claimsContentContainer">
+							<div class="claimsContent">
+								<div id="claimsPolicyType">
+									<p>Plan Type</p>
+									<h6 class="vmargin10 strong">{{bcbsnc.thisMember.selectedPolicy.planName}}</h6><input type="hidden" value="PLANNAME" id="planValue">
+								</div>
+								<p class="instruction">Note that some providers do not file claims immediately. Detailed claim information is only available for claims that have been processed. </p>
+								#if($wo.feature.healthcareSummaryReport)
+									<p class="bold">Get a Benefits and Claims Analysis</p>
+									<p><a href="/members/secure/claims/summaryreport.htm">Health Care Summary Report</a></p>
+								#end
+							</div>
+							<div class="rxClaimsContent hide">
+								##if($wo.defaultPolicy.isActive)
+								<div class="primeContent">
+									<a href="/members/secure/account/bcbsnc_redirect_consent.htm?SSO=PRIME&page=ClaimsHistory" onclick="trackSso('SSO_RX_PORTAL', 'ClaimsHistory')" target="_Blank">Go to Prime Therapeutics</a> to:
+									<ul class="basicList vmargin10">
+										<li><a href="/members/secure/account/bcbsnc_redirect_consent.htm?SSO=PRIME&page=FindAPharmacy" onclick="trackSso('SSO_RX_PORTAL', 'FindAPharmacy')" target="_Blank">Find a Pharmacy</a></li>
+										<li><a href="/members/secure/account/bcbsnc_redirect_consent.htm?SSO=PRIME&page=ClaimsHistory" onclick="trackSso('SSO_RX_PORTAL', 'ClaimsHistory')" target="_Blank">View Prescription Claims</a></li>
+										<li><a href="/members/secure/account/bcbsnc_redirect_consent.htm?SSO=PRIME&page=FindDrugs" onclick="trackSso('SSO_RX_PORTAL', 'FindDrugs')" target="_Blank">Research Prescription Costs</a></li>
+									</ul>
+									<p>Your BCBSNC prescription drug benefit is provided through Prime Therapeutics.</p>
+								</div>
+								##end
+							</div>
+						</div>
+						<br clear="all" />
+						#if($wo.feature.eob)
+						<div>
+							<p>Expand a claim to see your Explanation of Benefits (EOB). Learn more about your <a href="/members/public/forms/eob/">EOB</a>. 	</p>
+						</div>
+						#end
+						<div class="tableNav">
+							<div class="downArrowNav">x</div>
+							<div class="right" style="padding-top:3px;">
+								<div class="left hmargin10"><a href="javascript:void(0);" class="linkbutton-gray claimsPreviousPage">< BACK</a></div>
+								<div class="left claimsCounter" style="padding-right:10px;">
+									<a href="#" class="linkbutton-blue">PRINT</a> Results <span class="claimsStart">0</span>-<span class="claimsEnd">0</span> of <span class="claimsTotal">0</span>
+								</div>
+								<a href="javascript:void(0);" class="linkbutton-gray claimsNextPage">MORE ></a>
+							</div>
+							<div class="left hmargin10">
+								<h5 class="bold">Your Results</h5>
+							</div>
+							<div class="claimsButtons" style="padding-top:3px;" ng-show="bcbsnc.thisMember.selectedPolicy.hasClaims">
+								<a href="javascript:void(0);" class="linkbutton-orange downloadClaims">DOWNLOAD ALL</a>
+							</div>
+						</div>
+						<div id="claimsTableInsert"></div>
+						<div id="firstRun" class="hide">true</div>
+						<div class="tableNav">
+							<br />
+							<div style="float:right;">
+								<div class="left hmargin10"><a href="javascript:void(0);" class="linkbutton-gray claimsPreviousPage">< BACK</a></div>
+								<div class="claimsCounter" style="padding-right:10px;float:left;">
+									<a href="#" class="linkbutton-blue">PRINT</a> Results <span class="claimsStart">0</span>-<span class="claimsEnd">0</span> of <span class="claimsTotal">0</span>
+								</div>
+								<a href="javascript:void(0);" class="linkbutton-gray claimsNextPage">MORE ></a>
+							</div>
+							<div class="claimsButtons" ng-show="bcbsnc.thisMember.selectedPolicy.hasClaims">
+								<a href="javascript:void(0);" class="linkbutton-orange downloadClaims">DOWNLOAD ALL</a>
+							</div>
+						</div>
+						<form action="/members/services/Claims/getCSVClaimsForMember" id="claimsCSV" method="post">
+							<input type="hidden" name="policyIndex" value="{{bcbsnc.thisMember.selectedPolicy.index}}"/>
+						</form>
+						<div class="legal">
+							<p>The claims information on this screen is not a guarantee of payment. Blue Cross NC may adjust this information as new information is received or if it is determined that claims were processed incorrectly. Claims status is available for health policies only. It typically takes two weeks or longer from date of service for providers to submit a claim. Providers have up to six months, and in some cases as many as 18 months, to file a claim, depending on your plan. Detailed claim information is only available for claims that have been processed.</p>
+						</div>
+						<p class="legal">Subscribers can see claims and benefits information for all the members on the policy.  A spouse or domestic partner can view claims and benefits usage for themselves and any dependents under age 18. Dependents can only view their own claims and benefits usage. </p>
+					</div>
+				</div>
+			</div>
+			#end
+
+			##if($wo.feature.prescriptions)
+			<div class="tabContent hide" id="claimsRxTabContent" ng-show="bcbsnc.thisMember.selectedPolicy.hasPharmacy || (bcbsnc.thisMember.selectedPolicy.isState && bcbsnc.thisMember.age > 17)">
+				<h5 ng-show="bcbsnc.thisMember.selectedPolicy.hasPharmacy" class="green">Prescriptions</h5>
+				<h5 ng-show="bcbsnc.thisMember.selectedPolicy.isState" class="green">Pharmacy Benefits</h5>
+				<div class="primeContent" ng-show="bcbsnc.thisMember.selectedPolicy.hasPharmacy "onloadedmetadata="">
+					<p>Blue Cross and Blue Shield of North Carolina offers prescription benefits provided by Prime Therapeutics. At Prime Therapeutics, you can search for prescription drug information, find a pharmacy or view your prescription drug claims.</p>
+					<p class="primeLink primeContent">
+						## #if($wo.demo.demoMode)
+						##	<a class="linkbutton-blue" href="/assets/members/public/images/demosite/Prime-Find-a-Drug.jpg" target="_Blank">Go to Prime Therapeutics</a>
+						## #else
+						<a href="/members/secure/account/bcbsnc_redirect_consent.htm?SSO=PRIME&amp;page=ClaimsHistory" onclick="trackSso('SSO_DRUG_SEARCH', 'ClaimsHistory')" target="_blank">Go to Prime Therapeutics</a>
+						## #end
+					</p>
+
+					<p class="footnote">Blue Cross NC does not control the Prime Therapeutics website; that website is maintained by Prime Therapeutics.</p>
+				</div>
+				<div class="primeContent" ng-show="bcbsnc.thisMember.selectedPolicy.isState">
+					<p>The State Health Plan utilizes a Pharmacy Benefit Manager(PBM) which administers the pharmacy benefit.  The current PBM is CVS Caremark. Use CVS Caremark to access a large network of pharmacies, find drugs, and refill your prescriptions.</p>
+					<p><a href="javascript:void(0)" onclick="ssoToVendor('cvs')" target="_Blank">Go to CVS Caremark</a></p>
+					<p class="footnote">Blue Cross NC does not control or maintain the CVS Caremark website.</p>
+				</div>
+			</div>
+			##end
+
+		</div>
+	</div>
+	<div class="hide" id="tooltipContent-totalClaimedAmount">This is the amount charged by the provider for the claims submitted by the provider.</div>
+	<div class="hide" id="tooltipContent-TotalCharges">Total Charges is the amount charged by your health care provider.</div>
+	<div class="hide" id="tooltipContent-AllowedAmount">The Allowed Amount is the rate negotiated by BCBSNC that in-network providers agreed to accept from BCBSNC members as full payment for covered services. Out-of-network claims also are reduced to an Allowed Amount but, out-of-network providers can bill members up to the higher Total Charges amount.</div>
+	<div class="hide" id="tooltipContent-BCBSNCNetworkSavings">Member Savings is the amount you saved by visiting an in-network provider. It&#8217;s the Total Charges minus the Allowed Amount plus any additional discounts BCBSNC has negotiated with your provider.</div>
+	<div class="hide" id="tooltipContent-Copayment">A Copayment is the fixed dollar amount you pay at the time of service.</div>
+	<div class="hide" id="tooltipContent-AppliedToDeductible">A deductible is the dollar amount you&#8217;re responsible to pay for covered services each benefit period before BCBSNC pays. Applied to Deductible is the amount you pay for a claim that is applied toward your deductible.</div>
+	<div class="hide" id="tooltipContent-AppliedToCoinsurance">Coinsurance is the sharing of your health care costs by BCBSNC and you for covered services (for example, you pay 20% and BCBSNC pays 80%). Applied To Coinsurance is the amount you pay for your share of a claim after you&#8217;ve met your deductible.</div>
+	<div class="hide" id="tooltipContent-yourPart">Your Part is the Total Charges from your provider minus your Member Savings and includes your Copayment, Deductible and/or Coinsurance. Your Part doesn&#8217;t include what you may already have paid for the service, but it will include any non-covered amounts you are responsible for paying.</div>
+	<div class="hide" id="tooltipContent-YourPart">Your Part is the Total Charges from your provider minus your Member Savings and includes your Copayment, Deductible and/or Coinsurance. Your Part doesn&#8217;t include what you may already have paid for the service, but it will include any non-covered amounts you are responsible for paying.</div>
+	<div class="hide" id="tooltipContent-yourPartRX">Your Part is the Total Charges from your provider minus your Member Savings and includes your Copayment, Deductible and/or Coinsurance. Your Part doesn&#8217;t include what you may already have paid for the service, but it will include any non-covered amounts you are responsible for paying.</div>
+	<div class="hide" id="tooltipContent-AmountPaidByBCBSNC">This is BCBSNC&#8217;s portion of the claim covered by your benefits.</div>
+
+	<div class="hide" id="tooltipContent-Dental-TotalCharges">This is the amount charged by the provider.</div>
+	<div class="hide" id="tooltipContent-Dental-ProviderDiscount">This is the amount in-network providers have agreed to accept from BCBSNC members as full payment for covered prescriptions. This amount also reflects any discounts offered by the pharmacy.</div>
+	<div class="hide" id="tooltipContent-Dental-DiscountSavings">This is the difference between the Total Charges and the Provider Discount.</div>
+	<div class="hide" id="tooltipContent-Dental-AppliedToDeductible">Amount of your responsibility that has been applied to your deductible.</div>
+	<div class="hide" id="tooltipContent-AppliedToCoinsuranceRX">Coinsurance is the sharing of your health care costs by BCBSNC and you for covered services (for example, you pay 20% and BCBSNC pays 80%). Applied To Coinsurance is the amount you pay for your share of a claim after you&#8217;ve met your deductible.</div>
+	<div class="hide" id="tooltipContent-Dental-AppliedToCoinsurance">Coinsurance is the sharing of your health care costs by BCBSNC and you for covered services (for example, you pay 20% and BCBSNC pays 80%). Applied To Coinsurance is the amount you pay for your share of a claim after you&#8217;ve met your deductible.</div>
+	<div class="hide" id="tooltipContent-Dental-YourResponsibility">This is the total charges, minus any network savings and includes the amount applied to deductible and/or coinsurance. It does not reflect any amount you may already have paid for this service.</div>
+	<div class="hide" id="tooltipContent-Dental-AmountPaidByBCBSNC">Amount of the claim covered by your benefits.</div>
+	<div class="hide"id="tooltipContent-ProviderDiscount">The Allowed Amount is the rate negotiated by BCBSNC that in-network providers agreed to accept from BCBSNC members as full payment for covered services. Out-of-network claims also are reduced to an Allowed Amount but, out-of-network providers can bill members up to the higher Total Charges amount.</div>
+	<div class="hide"id="tooltipContent-DiscountSavings">Member Savings is the amount you saved by visiting an in-network provider. It&#8217;s the Total Charges minus the Allowed Amount plus any additional discounts BCBSNC has negotiated with your provider.</div>
+	<div class="hide"id="tooltipContent-AppliedToDeductible">A deductible is the dollar amount you&#8217;re responsible to pay for covered services each benefit period before BCBSNC pays. Applied to Deductible is the amount you pay for a claim that is applied toward your deductible.</div>
+	<div class="hide"id="tooltipContent-YourResponsibility">Your Part is the Total Charges from your provider minus your Member Savings and includes your Copayment, Deductible and/or Coinsurance. Your Part doesn&#8217;t include what you may already have paid for the service, but it will include any non-covered amounts you are responsible for paying.</div>
+	<div class="hide" id="tooltipContent-reprocessed">A claim is reprocessed to correct insurance benefits previously applied.</div>
+
+<script type="text/javascript" src="/assets/members/public/scripts/ssoToVendor.js"></script>
+<script src="/assets/members/public/data-capture/blueconnect-data-capture-jquery.min.js"></script>
+<script src="/assets/members/public/data-capture/manual-sso-tracking.js"></script>
+<script>
+	(function() {
+		jQuery.fn.dataCapture.track('CLAIM_OVERVIEW_MEDICAL', {selectedPolicyIndex: bcbsnc.thisMember.selectedPolicy.index});
+
+		jQuery('#claimsPolicySelect').change(function(event) {
+			jQuery.fn.dataCapture.track('CLAIM_OVERVIEW_MEDICAL', {selectedPolicyIndex: jQuery('#claimsPolicySelect').val().split('policy').join('')});
+		});
+	}());
+
+	jQuery(document).ready(function() {
+
+		jQuery('.searchClaims').click(function(event) {
+			jQuery.fn.dataCapture.track('MEDICAL_CLAIM_SEARCH',
+				{
+					selectedPolicyIndex: jQuery('#claimsPolicySelect').val().split('policy').join(''),
+					searchParameters: {
+						memberName: (bcbsnc.thisMember.selectedPolicy.memberCount == 1) ? jQuery('#memberSelect option[value="member0"]').text().trim().split('  ').join(' ') : jQuery("#memberSelect option:selected").text().trim().split('  ').join(' '),
+					 	claimNumber: jQuery('#claimNumber').val(),
+					 	serviceType: 'ALL',
+					 	dateFrom: jQuery('#valueA').val(),
+					 	dateTo: jQuery('#valueB').val()
+					}
+				}
+			);
+		});
+
+		jQuery(document).on('click', '.claimsRow', function() {
+			if(!jQuery(this).hasClass('eventOpened')) {
+				if (jQuery(this).hasClass('medclaimrow')) {
+					jQuery.fn.dataCapture.track('MEDICAL_CLAIM_DETAILS',
+						{
+							selectedPolicyIndex: jQuery('#claimsPolicySelect').val().split('policy').join(''),
+							claimNumber: jQuery(this).data('claim-id')
+						}
+					);
+				} else {
+					jQuery.fn.dataCapture.track('RXCLAIM_DETAILS',
+						{
+							selectedPolicyIndex: jQuery('#claimsPolicySelect').val().split('policy').join(''),
+							claimNumber: jQuery(this).data('claim-id')
+						}
+					);
+				}
+
+				jQuery(this).addClass('eventOpened');
+			}
+		});
+
+		jQuery('.searchRxClaims').click(function(event) {
+			jQuery.fn.dataCapture.track('RXCLAIM_SEARCH',
+				{
+					selectedPolicyIndex: jQuery('#claimsPolicySelect').val().split('policy').join(''),
+					searchParameters: {
+						memberName: (bcbsnc.thisMember.selectedPolicy.memberCount == 1) ? jQuery('#memberSelect option[value="member0"]').text().trim().split('  ').join(' ') : jQuery("#memberSelect option:selected").text().trim().split('  ').join(' '),
+					 	claimNumber: jQuery('#claimNumber').val(),
+					 	serviceType: 'ALL',
+					 	dateFrom: jQuery('#valueA').val(),
+					 	dateTo: jQuery('#valueB').val()
+					}
+				}
+			);
+		});
+
+		jQuery('#claimsRxTab').click(function() {
+			if(!jQuery(this).hasClass('eventOpened')) {
+				jQuery.fn.dataCapture.track('RXCLAIM_SUMMARY_DEFAULT',
+					{
+						selectedPolicyIndex: jQuery('#claimsPolicySelect').val().split('policy').join('')
+					}
+				);
+				jQuery(this).addClass('eventOpened');
+			}
+		});
+
+	});
+</script>
+
+<script>
+	// Get the modal
+	var modal = document.getElementById('accessOneModal');
+
+	// Get the button that opens the modal
+	var modalOpenBtn = document.getElementById('modalOpenBtn');
+
+	// Get the <span> element that closes the modal
+	var closeBtn = document.getElementById('accessOneModalCloseBtn');
+
+	// When the user hovers the button, open the modal 
+	modalOpenBtn.onhover = function() {
+		modal.style.display = "block";
+	}
+
+	// When the user clicks on <span> (x), close the modal
+	closeBtn.onclick = function() {
+		modal.style.display = "none";
+	}
+
+	// When the user clicks anywhere outside of the modal, close it
+	window.onclick = function(event) {
+		if (event.target == modal) {
+			modal.style.display = "none";
+		}
+	}
+</script>
+<style>
+	#modalOpenBtn {
+		width: 10px;
+		height: 10px;
+		display: inline-block;
+		position: absolute;
+		left: 5px;
+		top: 100px;
+		background-color: #4A7637;
+	}
+	/* The Modal (background) */
+	.access-one-modal {
+		display: none;
+		position: fixed; 
+		z-index: 100; 
+		padding-top: 100px; 
+		left: 0;
+		top: 0;
+		width: 40%; 
+		height: 100%; 
+		overflow: auto; 
+		background-color: rgb(0,0,0);
+		background-color: rgba(0,0,0,0.4); 
+	}
+
+	/* Modal Content */
+	.access-one-modal-content {
+		background-color: #fefefe;
+		margin: auto;
+		padding: 20px;
+		border: 1px solid #888;
+		width: 80%;
+	}
+
+	/* The Close Button */
+	.access-one-modal-close {
+		color: #aaaaaa;
+		float: right;
+		font-size: 20px;
+		cursor: pointer;
+	}
+
+	.access-one-logo {
+		float: left;
+		height: 50px;
+		width: 130px;
+	}
+
+	.learn-more-btn {
+		background: white;
+		border: 1px solid #03a9f4;
+		width: 80%;
+		margin: auto;
+		height: 30px;
+	}
+</style>
+
+#parse( "members/secure/navigation.htm" )
+#parse( "members/secure/footer.htm" )
