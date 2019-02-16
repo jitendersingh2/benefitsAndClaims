@@ -1,0 +1,32 @@
+<ul id="navigation">
+	<li><a href="/members/secure/claims/index.htm">Overview</a></li>
+	#if($wo.feature.healthcareSummaryReport)
+		<li><a href="/members/secure/claims/summaryreport.htm">Health Care Summary Report</a></li>
+	#end
+	#if($wo.feature.claimsForms)
+		<li><a href="/members/secure/claims/forms.htm">Claim Forms</a></li>
+	#end
+	#if($wo.defaultPolicy.medicareAdvantage || $wo.defaultPolicy.PDP)
+		<li><a href="/members/secure/claims/appeals.htm">Grievances &amp; Appeals</a></li>
+	#else
+		<li><a href="/members/secure/claims/appeals.htm">Appeals &amp; Grievances</a></li>
+	#end
+	#if($wo.feature.eob)
+		<li><a href="/members/secure/claims/eobsearch.htm">Explanation of Benefits (EOB)</a></li>
+	#end
+	#if($wo.defaultPolicy.hasDental && !$wo.defaultPolicy.isDental)
+		<li><a href="/members/secure/claims/dental.htm">Dental</a></li>
+	#end
+</ul>
+#if ($wo.feature.isLiveChat)
+	<div data-bcbsnc-livechat="" data-disable="false" data-secure="true" style="min-height:40px; position:absolute; bottom:-60px; background-color:#fff;"></div>
+    <!--<script src="//c.la5cs.salesforceliveagent.com/content/g/js/38.0/deployment.js"></script>-->
+	<script src="/assets/members/secure/apps/livechat/app.min.js"></script>
+#end
+#if(!$wo.defaultPolicy.isState)
+	<div id="modalOpenBtn" style="position: absolute;background-color: #edf1eb;color: #4A7637;padding: 20px 10px;margin-top: 40px;cursor:pointer;">
+		<div>Get Bill Help</div>
+		<div>Need help paying for medical costs</div>
+		<a style="color: #0073ae">Find Financial Resources</a>
+	</div>
+#end

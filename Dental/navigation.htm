@@ -1,0 +1,30 @@
+<ul id="navigation">
+	<li><a href="/members/secure/dental/index.htm">Plan Details</a></li>
+	#if($wo.defaultPolicy.fepDental)
+		<li><a href="/members/secure/dental/fep_howitworks.htm">How It Works</a></li>
+		<li><a href="/members/secure/dental/fep_aboutmyplan.htm">About my Plan</a></li>
+		<li><a href="/members/secure/dental/fep_faq.htm">FAQs</a></li>
+	#elseif($wo.feature.lowCostDental)
+		<li><a href="/members/secure/dental/faq_individuals.htm">FAQs</a></li>
+	#elseif($wo.defaultPolicy.individual || $wo.feature.lowCostDental)
+		<li><a href="/members/secure/dental/faq_individuals.htm">FAQs</a></li>
+		<li><a href="/members/secure/dental/whats_covered.htm">What's Covered</a></li>
+	#end
+	##***********************************CHANGE**************************************
+	#if($findadoctoractive)
+	##***********************************CHANGE**************************************
+		<li class="activeNav"><a href="https://${webEnv}.bcbsnc.com/members/secure/doctors/search.htm" style="color:white"><span>&nbsp;</span>Find a Dentist</a></li>
+	#else
+		<li><a href="https://${webEnv}.bcbsnc.com/members/secure/doctors/search.htm">Find a Dentist</a></li>
+	#end
+	#if($wo.defaultPolcy.hasDental && $wo.defaultPolicy.lobCode != "DTL" &&  $wo.defaultPolicy.lobCode != "DTL1" )
+		<li><a href="/members/secure/benefits/dental.htm">Dental</a></li>
+	#end
+</ul>
+#if(!$wo.defaultPolicy.isState)
+	<div id="modalOpenBtn" style="position: absolute;background-color: #edf1eb;color: #4A7637;padding: 20px 10px;margin-top: 40px;cursor:pointer;">
+		<div>Get Bill Help</div>
+		<div>Need help paying for medical costs</div>
+		<a style="color: #0073ae">Find Financial Resources</a>
+	</div>
+#end

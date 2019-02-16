@@ -1,0 +1,64 @@
+<ul id="navigation">
+	#if($wo.defaultPolicy.medicareAdvantage)
+		<li id='benefitsNav'><a href="/members/secure/benefits/index.htm">Overview</a></li>
+		<li id='alegraNav'><a href="/members/secure/benefits/altegra_health.htm">Help with Medicare Premiums</a></li>
+		<li class="navsection discountsNav"><div><a href="/members/secure/benefits/discounts/index.htm">Member Discounts</a></div>
+	#elseif($wo.defaultPolicy.medicareSupplement)
+		<li id='benefitsNav'><a href="/members/secure/benefits/index.htm">Overview</a></li>
+		<li><a href="/members/secure/benefits/choose_a_provider.htm">Choosing A Provider</a></li>
+		<li class="navsection discountsNav"><div><a href="/members/secure/benefits/discounts/index.htm">Member Discounts</a></div>
+		<!-- <ul class="discounts-subnav hide subnav">
+			<li><a href="/members/secure/benefits/discounts/blue365.htm">Blue365</a></li>
+		</ul> -->
+		</li>
+		#if($wo.feature.costEstimator)
+		<li><a href="/members/secure/benefits/cost_estimator.htm">Estimate Health Care Costs</a></li>
+		#end
+		<li><a href="/members/secure/doctors/compare_hospitals.htm">Compare Hospitals</a></li>
+	#else
+		<li><a href="/members/secure/benefits/index.htm">Overview</a></li>
+		#if($wo.defaultPolicy.lobCode != "DTL1")
+			<li><a href="/members/secure/benefits/faq.htm">FAQs About Benefits</a></li>
+		#end
+		#if ($wo.feature.manageHSA)
+			<li><a href="/members/secure/benefits/understanding_your_HSA_plan.htm">Understanding Your HSA Plan</a></li>
+			<li><a href="/members/secure/benefits/managing_your_hsa.htm">Managing Your HSA</a></li>
+		#end
+		#if ($wo.feature.manageHRA)
+			<li><a href="/members/secure/benefits/understanding_your_HRA_plan.htm">Understanding Your HRA Plan</a></li>
+			<li><a href="/members/secure/benefits/hra_faq.htm">HRA FAQs</a></li>
+		#end
+		<li><a href="/members/secure/benefits/prior_review.htm">Prior Review</a></li>
+		#if ($wo.defaultPolicy.groupNumber != "000029")
+		<li><a href="/members/secure/benefits/travel.htm">When You Travel</a></li>
+		#end
+		<li><a href="/members/secure/benefits/manage_costs.htm">Controlling Health Care Costs</a></li>
+		#if($wo.feature.costEstimator)
+		<li><a href="/members/secure/benefits/cost_estimator.htm">Estimate Health Care Costs</a></li>
+		#end
+		<li class="navsection discountsNav"><div><a href="/members/secure/benefits/discounts/index.htm">Member Discounts</a></div>
+		<!-- <ul class="discounts-subnav hide subnav">
+			<li><a href="/members/secure/benefits/discounts/blue365.htm">Blue365</a></li>
+		</ul> -->
+		</li>
+		#if($wo.defaultPolicy.isGroup)
+			<li><a href="/members/secure/benefits/compare_plans.htm">Compare Plans</a></li>
+		#end <!--JIRA-BC-891-->
+	#end
+	#if($wo.feature.dental && !$wo.defaultPolicy.isDental)
+		<li><a href="/members/secure/benefits/dental.htm">Dental</a></li>
+	#end
+</ul>
+#if ($wo.feature.isLiveChat)
+	<div data-bcbsnc-livechat="" data-disable="false" data-secure="true" style="min-height:40px; position:absolute; bottom:-60px; background-color:#fff;"></div>
+	<!--<script src="//c.la5cs.salesforceliveagent.com/content/g/js/38.0/deployment.js"></script>-->
+	<script src="/assets/members/secure/apps/livechat/app.min.js"></script>
+#end
+
+#if(!$wo.defaultPolicy.isState)
+	<div id="modalOpenBtn" style="position: absolute;background-color: #edf1eb;color: #4A7637;padding: 20px 10px;margin-top: 40px;cursor:pointer;">
+		<div>Get Bill Help</div>
+		<div>Need help paying for medical costs</div>
+		<a style="color: #0073ae">Find Financial Resources</a>
+	</div>
+#end

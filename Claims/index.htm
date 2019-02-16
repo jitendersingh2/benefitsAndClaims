@@ -15,9 +15,6 @@
 	#set( $dentalClaimForm = "dental_claim_form_group.pdf")
 #end
 
-<!-- Modal Open Colored Box -->
-<div id="modalOpenBtn"></div>
-
 <!-- The Modal -->
 <div id="accessOneModal" class="access-one-modal">
 	<!-- Modal content -->
@@ -343,35 +340,28 @@
 </script>
 
 <script>
-	// Get the modal
-	var modal = document.getElementById('accessOneModal');
+	$(window).ready(function() {
+		// Get the modal
+		var modal = document.getElementById('accessOneModal');
 
-	// Get the button that opens the modal
-	var modalOpenBtn = document.getElementById('modalOpenBtn');
+		// Get the button that opens the modal
+		var modalOpenBtn = document.getElementById('modalOpenBtn');
 
-	// Get the <span> element that closes the modal
-	var closeBtn = document.getElementById('accessOneModalCloseBtn');
+		// Get the <span> element that closes the modal
+		var closeBtn = document.getElementById('accessOneModalCloseBtn');
 
-	// When the user hovers the button, open the modal 
-	modalOpenBtn.onhover = function() {
-		modal.style.display = "block";
-	}
+		// When the user hovers the button, open the modal 
+		modalOpenBtn.onhover = function() {
+			modal.style.display = "block";
+		}
 
-	// When the user clicks on <span> (x), close the modal
-	closeBtn.onclick = function() {
-		modal.style.display = "none";
-	}
+		// When the user clicks on <span> (x), close the modal
+		closeBtn.onclick = function() {
+			modal.style.display = "none";
+		}
+	})
 </script>
 <style>
-	#modalOpenBtn {
-		width: 10px;
-		height: 10px;
-		display: inline-block;
-		position: absolute;
-		left: 5px;
-		top: 100px;
-		background-color: #4A7637;
-	}
 	/* The Modal (background) */
 	.access-one-modal {
 		display: none;

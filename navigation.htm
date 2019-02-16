@@ -1,0 +1,64 @@
+</div>
+#if ($navigation != "none")
+</div>
+</div>
+#end
+
+<div class="yui-b" id="navBlock">
+#if ($navigation == 1)
+	<!-- Account -->
+	#parse("members/secure/account/navigation.htm")
+
+#elseif ($navigation == 2 || ($navigation == 4 && $wo.defaultPolicy.medicareSupplement))
+	<!-- benefits -->
+	#parse("members/secure/benefits/navigation.htm")
+
+#elseif ($navigation == 3)
+	<!-- claims -->
+	#parse("members/secure/claims/navigation.htm")
+
+#elseif ($navigation == 4  && !$wo.defaultPolicy.medicareSupplement)
+	<!-- doctors -->
+	#parse("/members/secure/doctors/navigation.htm")
+
+#elseif ($navigation == 5)
+	<!-- wellness -->
+	#parse("/members/secure/wellness/navigation.htm")
+
+#elseif ($navigation == 6)
+	<!-- prescriptions -->
+	#parse("/members/secure/prescriptions/navigation.htm")
+
+#elseif ($navigation == 7)
+	<!-- dental -->
+	#parse("/members/secure/dental/navigation.htm")
+
+#elseif ($navigation == 8)
+	<!-- flu -->
+	#parse("/members/secure/flu/navigation.htm")
+
+#elseif ($navigation == 9)
+<!-- privacy -->
+	<ul id="navigation">
+		<li><a href="/members/public/privacy/index.htm">Privacy Overview</a></li>
+		<li><a href="/members/public/privacy/privacy_policy.htm">Web Privacy Policy</a></li>
+		<li><a href="/members/public/privacy/usage_agreement.htm">Usage Agreement</a></li>
+		<li><a href="/members/public/privacy/privacy.htm">Notice of Privacy Practices</a></li>
+	</ul>
+
+#elseif ($navigation == 'none')
+
+
+#else
+	<ul id="navigation">
+		<li>NO NAV SET</li>
+	</ul>
+#end
+
+</div>
+<script>
+	$(function(){
+		$('#navigation li').click(function() {
+			window.location = $(this).find('a').attr('href')});
+	});
+</script>
