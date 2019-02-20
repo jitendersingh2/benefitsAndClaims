@@ -24,7 +24,7 @@
 			src="/assets/members/public/images/AccessOneLogo.png"
 			class="access-one-logo"
 		>
-		<p>AccessOne has partnered with selected hospitals to provide patient friendly financing.
+		<p class="main-header-label">AccessOne has partnered with selected hospitals to provide patient friendly financing.
 			They offer no-interest and flexible low-interest payment plans that are tailored to
 			your financial situation. Their customized payment options are made to help, not hurt:
 		</p>
@@ -32,7 +32,7 @@
 			<li>No credit reporting</li>
 			<li>Everyone is accepted, 100% voluntary enrollment</li>
 			<li>No hidden fees</li>
-			<li>Easy payment methods: online, phone, check , auto pay</li>
+			<li>Easy payment methods: online, phone, check, auto pay</li>
 			<li>Combined Statements that include other medical bills and family members</li>
 		</ul> <br>
 		<a style="text-decoration: none;" target="_blank" href="https://www.accessonemedcard.com/"><button class="learn-more-btn">Learn More</button></a>
@@ -340,7 +340,7 @@
 </script>
 
 <script>
-	$(window).ready(function() {
+	$(window).load(function() {
 		// Get the modal
 		var modal = document.getElementById('accessOneModal');
 
@@ -351,7 +351,7 @@
 		var closeBtn = document.getElementById('accessOneModalCloseBtn');
 
 		// When the user hovers the button, open the modal 
-		modalOpenBtn.onhover = function() {
+		modalOpenBtn.onclick = function() {
 			modal.style.display = "block";
 		}
 
@@ -366,15 +366,12 @@
 	.access-one-modal {
 		display: none;
 		position: fixed; 
-		z-index: 100; 
-		padding-top: 100px; 
-		left: 0;
+		z-index: 1000; 
+		padding-top: 10px; 
 		top: 0;
-		width: 40%; 
+		width: 25%; 
 		height: 100%; 
-		overflow: auto; 
-		background-color: rgb(0,0,0);
-		background-color: rgba(0,0,0,0.4); 
+		overflow: auto;
 	}
 
 	/* Modal Content */
@@ -384,6 +381,11 @@
 		padding: 20px;
 		border: 1px solid #888;
 		width: 80%;
+		padding-bottom: 50px
+	}
+
+	.main-header-label {
+		margin-top: 70px;
 	}
 
 	/* The Close Button */
@@ -403,7 +405,7 @@
 	.learn-more-btn {
 		background: white;
 		border: 1px solid #03a9f4;
-		width: 80%;
+		width: 100%;
 		margin: auto;
 		height: 30px;
 	}

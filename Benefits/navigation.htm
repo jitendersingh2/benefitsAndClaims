@@ -56,9 +56,13 @@
 #end
 
 #if(!$wo.defaultPolicy.isState)
-	<div id="modalOpenBtn" style="position: absolute;background-color: #edf1eb;color: #4A7637;padding: 20px 10px;margin-top: 40px;cursor:pointer;">
-		<div>Get Bill Help</div>
-		<div>Need help paying for medical costs</div>
-		<a style="color: #0073ae">Find Financial Resources</a>
+	#if ($wo.feature.isLiveChat)
+	<div style="position: absolute;background-color: #edf1eb;color: #4A7637;padding: 20px 10px;margin-top: 80px;cursor:pointer;">
+	#else
+	<div id="modalOpenBtn" style="position: absolute;background-color: #edf1eb;color: #4A7637;padding: 20px 10px;margin-top: 30px;cursor:pointer;"></div>
+	#end	
+		<div style="margin-bottom: 10px;font-weight: bold;font-size: 20px">Get Bill Help</div>
+		<div style="margin-bottom: 10px;">Need help paying for medical costs</div>
+		<a id="modalOpenBtn" href="javascript:void(0)" style="color: #0073ae;margin-bottom: 10px;">Find Financial Resources</a>
 	</div>
 #end
