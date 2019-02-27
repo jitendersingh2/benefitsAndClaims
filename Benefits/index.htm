@@ -62,26 +62,28 @@
 		</script>
 	#end
 		<!-- The Modal -->
-		<div id="accessOneModal" class="access-one-modal">
-			<!-- Modal content -->
-			<div class="access-one-modal-content">
-				<span id="accessOneModalCloseBtn" class="access-one-modal-close">&times;</span>
-				<img
-					src="/assets/members/public/images/AccessOneLogo.png"
-					class="access-one-logo"
-				>
-				<p class="main-header-label">AccessOne has partnered with selected hospitals to provide patient friendly financing.
-				They offer no-interest and flexible low-interest payment plans that are tailored to
-				your financial situation. Their customized payment options are made to help, not hurt:
-				</p>
-				<ul>
-					<li>No credit reporting</li>
-					<li>Everyone is accepted, 100% voluntary enrollment</li>
-					<li>No hidden fees</li>
-					<li>Easy payment methods: online, phone, check, auto pay</li>
-					<li>Combined Statements that include other medical bills and family members</li>
-				</ul> <br>
-				<a style="text-decoration: none;" target="_blank" href="https://www.accessonemedcard.com/"><button class="learn-more-btn">Learn More</button></a>
+		<div id="accessOneModal" class="access-one-modal-overlay">
+			<div class="access-one-modal">
+				<!-- Modal content -->
+				<div class="access-one-modal-content">
+					<span id="accessOneModalCloseBtn" class="access-one-modal-close">&times;</span>
+					<img
+						src="/assets/members/public/images/AccessOneLogo.png"
+						class="access-one-logo"
+					>
+					<p class="main-header-label">AccessOne has partnered with selected hospitals to provide patient friendly financing.
+					They offer no-interest and flexible low-interest payment plans that are tailored to
+					your financial situation. Their customized payment options are made to help, not hurt:
+					</p>
+					<ul>
+						<li>No credit reporting</li>
+						<li>Everyone is accepted, 100% voluntary enrollment</li>
+						<li>No hidden fees</li>
+						<li>Easy payment methods: online, phone, check, auto pay</li>
+						<li>Combined Statements that include other medical bills and family members</li>
+					</ul> <br>
+					<a style="text-decoration: none;" target="_blank" href="https://www.accessonemedcard.com/"><button class="learn-more-btn">Learn More</button></a>
+				</div>
 			</div>
 		</div>
 		<div id="main-content" tabindex="-1" class="content-header">
@@ -1967,18 +1969,15 @@
 	$(window).load(function() {
 		// Get the modal
 		var modal = document.getElementById('accessOneModal');
-
 		// Get the button that opens the modal
 		var modalOpenBtn = document.getElementById('modalOpenBtn');
-
 		// Get the <span> element that closes the modal
 		var closeBtn = document.getElementById('accessOneModalCloseBtn');
-
-		// When the user hovers the button, open the modal 
+		// When the user clicks the button, open the modal 
 		modalOpenBtn.onclick = function() {
+			$(window).scrollTop(0);
 			modal.style.display = "block";
 		}
-
 		// When the user clicks on <span> (x), close the modal
 		closeBtn.onclick = function() {
 			modal.style.display = "none";
@@ -1986,18 +1985,32 @@
 	})
 </script>
 <style>
+	.modal-hide-overlay {
+		overflow: hidden!important;
+	}
+
+	.access-one-modal-overlay {
+		display: none;
+		z-index: 1000;
+	    background: rgb(0,0,0,0.4);
+	    position: fixed;
+	    top: 0;
+	    width: 100%;
+	    left: 0;
+	    right: 0;
+	    bottom: 0;
+	    height: 100%;
+	    padding-top: 350px;
+	}
 	/* The Modal (background) */
 	.access-one-modal {
-		display: none;
-		position: fixed; 
-		z-index: 100; 
-		padding-top: 10px; 
-		top: 0;
+		z-index: 100;
+		margin-top: -180px; 
+		margin-left: 450px;
 		width: 25%; 
 		height: 100%; 
 		overflow: auto;
 	}
-
 	/* Modal Content */
 	.access-one-modal-content {
 		background-color: #fefefe;
@@ -2007,11 +2020,9 @@
 		width: 80%;
 		padding-bottom: 50px
 	}
-
 	.main-header-label {
 		margin-top: 70px;
 	}
-
 	/* The Close Button */
 	.access-one-modal-close {
 		color: #aaaaaa;
@@ -2019,13 +2030,11 @@
 		font-size: 20px;
 		cursor: pointer;
 	}
-
 	.access-one-logo {
 		float: left;
 		height: 50px;
 		width: 130px;
 	}
-
 	.learn-more-btn {
 		background: white;
 		border: 1px solid #03a9f4;
@@ -2037,4 +2046,4 @@
 
 #parse( "members/secure/navigation.htm")
 #parse( "members/secure/includes/benefits-templates.htm")
-#parse( "members/secure/footer.htm" )
+#parse( "members/secure/footer.htm" )      
